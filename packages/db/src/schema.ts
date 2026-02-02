@@ -3,7 +3,7 @@ import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqli
 // Users
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),                    // UUIDv7
-  email: text('email').notNull().unique(),
+  email: text('email').unique(),                  // Optional; not used for login
   subdomain: text('subdomain').notNull().unique(),
   theme: text('theme').default('default'),
   settings: text('settings').default('{}'),       // JSON

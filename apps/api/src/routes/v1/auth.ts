@@ -100,12 +100,15 @@ authRoutes.get('/check-email', async (c) => {
  */
 authRoutes.post('/register', async (c) => {
   const body = await c.req.json<{
-    email: string;
+    email?: string | null;
     subdomain: string;
   }>();
 
-  // Validate email
-  if (!body.email || !body.email.includes('@')) {
+  const rawEmail = typeof body.email === 'string' ? body.email.trim() : '';
+  const email = rawEmail.length > 0 ? rawEmail : null;
+
+  // Validate email only if provided
+  if (email && !email.includes('@')) {
     throw new AppError(
       'auth.invalid_email',
       400,
@@ -152,20 +155,22 @@ authRoutes.post('/register', async (c) => {
     );
   }
 
-  // Check if email is already registered
-  const existingEmail = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, body.email))
-    .get();
+  // Check if email is already registered (only when provided)
+  if (email) {
+    const existingEmail = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, email))
+      .get();
 
-  if (existingEmail) {
-    throw new AppError(
-      'auth.email_taken',
-      409,
-      'Conflict',
-      'This email is already registered',
-    );
+    if (existingEmail) {
+      throw new AppError(
+        'auth.email_taken',
+        409,
+        'Conflict',
+        'This email is already registered',
+      );
+    }
   }
 
   // Create user
@@ -174,7 +179,7 @@ authRoutes.post('/register', async (c) => {
 
   await db.insert(users).values({
     id: userId,
-    email: body.email,
+    email,
     subdomain: body.subdomain,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -204,7 +209,7 @@ authRoutes.post('/register', async (c) => {
       id: userId,
       type: 'user',
       attributes: {
-        email: body.email,
+        email,
         subdomain: body.subdomain,
         blogUrl,
         apiKey: apiKey.fullKey, // Only shown at registration!

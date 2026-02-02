@@ -6,6 +6,8 @@ A simple REST API for blogging, designed to work seamlessly with AI tools like C
 
 **Note:** This service does not embed AI. It provides a clean API that AI tools can interact with.
 
+**Demo:** [blog.dreamcore.gg/b/notf](https://blog.dreamcore.gg/b/notf)
+
 ## Features
 
 - **API-first**: No web UI, just a clean REST API
@@ -21,7 +23,7 @@ A simple REST API for blogging, designed to work seamlessly with AI tools like C
 Install the Claude Code skill (connects to the public instance):
 
 ```bash
-curl -fsSL https://cliblog-api.notef.workers.dev/install-skill.sh | bash
+curl -fsSL https://blog.dreamcore.gg/install-skill.sh | bash
 ```
 
 Then tell Claude Code: "I want to start a blog"
@@ -75,7 +77,7 @@ After deploying, install the skill and create the config manually:
 
 ```bash
 # Install skill (uses hosted version's script, but skill supports any API URL)
-curl -fsSL https://cliblog-api.notef.workers.dev/install-skill.sh | bash
+curl -fsSL https://blog.dreamcore.gg/install-skill.sh | bash
 
 # Create config pointing to your instance
 mkdir -p ~/.config/cliblog
@@ -104,7 +106,7 @@ The default API URL in the skill points to the hosted version. To change it, edi
 
 ```typescript
 // Find this line in SKILL_CONTENT:
-"apiUrl": "https://cliblog-api.notef.workers.dev"
+"apiUrl": "https://blog.dreamcore.gg"
 
 // Change to your instance:
 "apiUrl": "https://YOUR-WORKER.workers.dev"

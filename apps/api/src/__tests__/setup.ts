@@ -11,7 +11,7 @@ export async function setupDatabase() {
   await env.DB.prepare(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY NOT NULL,
-      email TEXT NOT NULL UNIQUE,
+      email TEXT UNIQUE,
       subdomain TEXT NOT NULL UNIQUE,
       theme TEXT DEFAULT 'default',
       settings TEXT DEFAULT '{}',

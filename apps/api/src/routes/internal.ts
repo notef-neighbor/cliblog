@@ -32,16 +32,27 @@ internalRoutes.use('/*', async (c, next) => {
 // POST /internal/users - Create a new user (admin only)
 internalRoutes.post('/users', async (c) => {
   const body = await c.req.json<{
-    email: string;
+    email?: string | null;
     subdomain: string;
   }>();
 
-  if (!body.email || !body.subdomain) {
+  if (!body.subdomain) {
     throw new AppError(
       'internal.invalid_input',
       400,
       'Bad Request',
-      'email and subdomain are required',
+      'subdomain is required',
+    );
+  }
+
+  const rawEmail = typeof body.email === 'string' ? body.email.trim() : '';
+  const email = rawEmail.length > 0 ? rawEmail : null;
+  if (email && !email.includes('@')) {
+    throw new AppError(
+      'internal.invalid_input',
+      400,
+      'Bad Request',
+      'email must be valid when provided',
     );
   }
 
@@ -51,7 +62,7 @@ internalRoutes.post('/users', async (c) => {
 
   await db.insert(users).values({
     id,
-    email: body.email,
+    email,
     subdomain: body.subdomain,
     createdAt: timestamp,
     updatedAt: timestamp,
@@ -62,7 +73,7 @@ internalRoutes.post('/users', async (c) => {
       id,
       type: 'user',
       attributes: {
-        email: body.email,
+        email,
         subdomain: body.subdomain,
         createdAt: timestamp,
       },

@@ -114,8 +114,10 @@ curl -X POST https://api.cliblog.com/v1/auth/register \
 **リクエスト:**
 | Field | Type | Required | 説明 |
 |-------|------|----------|------|
-| email | string | ✓ | メールアドレス |
+| email | string |  | メールアドレス（任意、ログインには使用しない） |
 | subdomain | string | ✓ | サブドメイン（3-30文字、英小文字・数字・ハイフン） |
+
+> ✅ `email` は任意です。未指定の場合は `null` として保存されます。
 
 **レスポンス (201):**
 ```json
@@ -347,11 +349,11 @@ Here is an image:
 | `auth.invalid_permissions` | 400 | 無効な権限文字列 |
 | `auth.key_not_found` | 404 | 指定された API キーが存在しない |
 | `auth.forbidden` | 403 | 他ユーザーのリソースへのアクセス |
-| `auth.invalid_email` | 400 | メールアドレスが不正 |
+| `auth.invalid_email` | 400 | メールアドレスが不正（指定した場合のみ） |
 | `auth.invalid_subdomain` | 400 | サブドメインが不正 |
 | `auth.subdomain_reserved` | 400 | サブドメインが予約済み |
 | `auth.subdomain_taken` | 409 | サブドメインが既に使用されている |
-| `auth.email_taken` | 409 | メールアドレスが既に登録されている |
+| `auth.email_taken` | 409 | メールアドレスが既に登録されている（指定した場合のみ） |
 | `posts.not_found` | 404 | 記事が見つからない |
 | `posts.invalid_input` | 400 | 必須フィールドが不足 |
 | `posts.slug_conflict` | 409 | スラッグが既に存在する |

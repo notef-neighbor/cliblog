@@ -533,7 +533,7 @@ import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqli
 // Users
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),                    // UUIDv7
-  email: text('email').notNull().unique(),
+  email: text('email').unique(),                  // 任意・ログインには使わない
   subdomain: text('subdomain').notNull().unique(),
   theme: text('theme').default('default'),
   settings: text('settings').default('{}'),       // JSON
@@ -970,7 +970,7 @@ pnpm deploy
 # 6. 初期ユーザー作成
 curl -X POST https://your-api.workers.dev/internal/users \
   -H "X-Internal-Key: $INTERNAL_KEY" \
-  -d '{"email": "you@example.com", "subdomain": "you"}'
+  -d '{"email": "you@example.com", "subdomain": "you"}'  # email は任意
 ```
 
 ### 環境変数

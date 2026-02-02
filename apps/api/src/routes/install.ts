@@ -25,6 +25,8 @@ description: CLIBLOG skill for Claude Code. Register, post, upload images, and m
 
 CLIBLOG is a CLI-first blog API. This skill helps users register, create posts, upload images, and manage content from their own terminal.
 
+Email is optional and **not used for login**.
+
 ## Config file
 
 Path: \`~/.config/cliblog/config.json\`
@@ -33,7 +35,7 @@ Example:
 
 \`\`\`json
 {
-  "apiUrl": "https://cliblog-api.notef.workers.dev",
+  "apiUrl": "https://blog.dreamcore.gg",
   "apiKey": "sk_blog_***",
   "subdomain": "your-subdomain",
   "blogUrl": "https://your-blog.example"
@@ -52,7 +54,7 @@ When the user says "I want to start a blog" or "Register me":
 
 0. Set \`API_URL\`:
    - If config exists, use \`config.apiUrl\`.
-   - If config is missing, use the default instance (\`https://cliblog-api.notef.workers.dev\`) unless the user provided another URL.
+   - If config is missing, use the default instance (\`https://blog.dreamcore.gg\`) unless the user provided another URL.
 
 1. Check for config:
    \`\`\`bash
@@ -60,33 +62,19 @@ When the user says "I want to start a blog" or "Register me":
    \`\`\`
    If config exists and has valid apiKey, skip registration.
 
-2. If no config, ask for **email first**.
+2. If no config, ask for:
+   - Subdomain (required; lowercase letters, numbers, hyphen; must start with a letter)
+   - Email (optional; not used for login)
 
-3. Check if email is already registered:
-   \`\`\`bash
-   curl -s "\${API_URL}/v1/auth/check-email?email=USER_EMAIL"
-   \`\`\`
-   Response: \`{"exists": true/false, "subdomain": "xxx" or null}\`
-
-4. **If email exists** (already registered):
-   Tell the user:
-   - "You already have an account (subdomain: {subdomain})."
-   - "To use it here, copy your config file from another device:"
-   - \`~/.config/cliblog/config.json\`
-   - "Or register with a different email."
-   **Do not ask for subdomain. Stop here.**
-
-5. **If email does not exist** (new user):
-   Ask for subdomain (lowercase letters, numbers, hyphen; must start with a letter).
-
-6. Call register:
+3. Call register:
    \`\`\`bash
    curl -s -X POST "\${API_URL}/v1/auth/register" \\
      -H "Content-Type: application/json" \\
      -d '{"email":"USER_EMAIL","subdomain":"USER_SUBDOMAIN"}'
    \`\`\`
+   - If the user skips email, **omit the email field**.
 
-7. Save config with the response values:
+4. Save config with the response values:
    \`\`\`bash
    mkdir -p ~/.config/cliblog
    cat > ~/.config/cliblog/config.json << 'EOF'
@@ -99,7 +87,7 @@ When the user says "I want to start a blog" or "Register me":
    EOF
    \`\`\`
 
-8. Reply with the returned \`blogUrl\` only.
+5. Reply with the returned \`blogUrl\` only.
 
 ## Create and publish a post
 
@@ -206,7 +194,8 @@ Never display key secrets after creation.
 ## Error handling
 
 - \`auth.subdomain_taken\`: Subdomain already used.
-- \`auth.email_taken\`: Email already registered.
+- \`auth.invalid_email\`: Invalid email (only when provided).
+- \`auth.email_taken\`: Email already registered (only when provided).
 - \`auth.invalid_subdomain\`: Must be 3–30 lowercase letters, digits, hyphen, start with a letter.
 - \`auth.insufficient_permissions\`: Missing required permission.
 - \`auth.privilege_escalation\`: Attempted permission escalation.
@@ -223,17 +212,17 @@ Never display key secrets after creation.
 
 const INSTALL_SCRIPT = `#!/bin/bash
 # CLIBLOG Skill Installer for Claude Code
-# https://cliblog-api.notef.workers.dev
+# https://blog.dreamcore.gg
 #
 # Usage:
 #   # プロジェクトローカル（デフォルト）
-#   curl -fsSL https://cliblog-api.notef.workers.dev/install-skill.sh | bash
+#   curl -fsSL https://blog.dreamcore.gg/install-skill.sh | bash
 #
 #   # グローバル（全プロジェクト共通）
-#   curl -fsSL https://cliblog-api.notef.workers.dev/install-skill.sh | bash -s -- --global
+#   curl -fsSL https://blog.dreamcore.gg/install-skill.sh | bash -s -- --global
 #
 # Safer alternative:
-#   curl -fsSLO https://cliblog-api.notef.workers.dev/install-skill.sh
+#   curl -fsSLO https://blog.dreamcore.gg/install-skill.sh
 #   less install-skill.sh  # review the script
 #   bash install-skill.sh        # local
 #   bash install-skill.sh --global  # global
@@ -241,7 +230,7 @@ const INSTALL_SCRIPT = `#!/bin/bash
 set -euo pipefail
 umask 022
 
-BASE_URL="https://cliblog-api.notef.workers.dev"
+BASE_URL="https://blog.dreamcore.gg"
 
 # Determine install location
 # --global: ~/.claude/skills/cliblog (user-wide)

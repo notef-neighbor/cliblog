@@ -11,12 +11,22 @@
 - [x] vitest 自動化
 - [x] ドキュメント更新
 - [x] 本番デプロイ
-- [ ] 独自ドメイン設定
+- [x] 独自ドメイン設定 (blog.dreamcore.gg)
 - [ ] Rate Limit（v1.0 スコープ外）
 
 ---
 
 ## 作業履歴
+
+### 2026-02-02: カスタムドメイン設定 & アカウント復旧
+
+**詳細:** `.claude/logs/2026-02-02-custom-domain-setup.md`
+
+- Cloudflare にドメイン追加、ネームサーバー移行
+- Worker に `blog.dreamcore.gg` を接続
+- notf アカウントの API キー再発行
+- Skill / README の URL を新ドメインに更新
+- 新 API URL: https://blog.dreamcore.gg
 
 ### 2026-02-02: 公開画像エンドポイント追加
 
