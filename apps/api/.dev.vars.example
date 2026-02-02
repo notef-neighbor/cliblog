@@ -1,0 +1,15 @@
+# Local development environment variables
+# Copy this file to .dev.vars and fill in the values
+
+# Internal API secret (for /internal/* endpoints)
+# Generate with: openssl rand -hex 32
+INTERNAL_KEY=your-internal-key-here
+
+# HMAC secret for API key verification
+# Generate with: openssl rand -hex 32
+API_KEY_SECRET=your-api-key-secret-here
+
+# Base domain for blog URLs (optional)
+# Set to your own domain when configured
+# Leave as example.com to use /b/{subdomain} path-based URLs
+SERVICE_DOMAIN=example.com

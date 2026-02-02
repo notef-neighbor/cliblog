@@ -1,0 +1,37 @@
+name = "cliblog-api"
+main = "src/index.ts"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+# D1 Database
+# Create with: wrangler d1 create cliblog
+[[d1_databases]]
+binding = "DB"
+database_name = "cliblog"
+database_id = "YOUR_D1_DATABASE_ID"
+migrations_dir = "../../packages/db/migrations"
+
+# R2 Buckets
+# Create with: wrangler r2 bucket create cliblog-content
+[[r2_buckets]]
+binding = "CONTENT_BUCKET"
+bucket_name = "cliblog-content"
+
+# Create with: wrangler r2 bucket create cliblog-assets
+[[r2_buckets]]
+binding = "ASSETS_BUCKET"
+bucket_name = "cliblog-assets"
+
+# Environment variables
+# Set secrets with: wrangler secret put VARIABLE_NAME
+# For local development, create .dev.vars file
+#
+# Required secrets:
+# - INTERNAL_KEY: Internal API secret (generate with: openssl rand -hex 32)
+# - API_KEY_SECRET: HMAC secret for API key verification (generate with: openssl rand -hex 32)
+#
+# Optional:
+# - SERVICE_DOMAIN: Base domain for blogs (default: cliblog.com)
+
+[vars]
+ENVIRONMENT = "development"
