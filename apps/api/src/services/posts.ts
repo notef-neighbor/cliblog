@@ -8,25 +8,47 @@ export interface CreatePostInput {
   title: string;
   content: string;
   slug?: string;
+  locale?: string;
+  translateTo?: string[];
 }
 
 export interface UpdatePostInput {
   title?: string;
   content?: string;
   slug?: string;
+  // Translation-specific fields
+  translationStatus?: 'pending' | 'ready' | 'failed';
+  lastTranslationError?: string;
+  translationLocked?: boolean;
 }
 
 export interface Post {
   id: string;
   userId: string;
-  slug: string;
-  title: string;
-  contentKey: string;
+  slug: string | null;
+  title: string | null;
+  contentKey: string | null;
   excerpt: string | null;
   status: string | null;
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
+  // i18n fields
+  locale: string | null;
+  originalPostId: string | null;
+  translationStatus: string | null;
+  sourceRevision: string | null;
+  translatedAt: string | null;
+  translationLocked: number | null;
+  lastTranslationError: string | null;
+}
+
+export interface TranslationInfo {
+  id: string;
+  locale: string;
+  status: string;
+  translatedAt?: string | null;
+  sourceRevision?: string | null;
 }
 
 /**
@@ -42,12 +64,13 @@ function slugify(text: string): string {
 }
 
 /**
- * Generate a unique slug for a post
+ * Generate a unique slug for a post (considering locale)
  */
 async function generateUniqueSlug(
   db: Database,
   userId: string,
   title: string,
+  locale: string | null,
   excludePostId?: string,
 ): Promise<string> {
   let base = slugify(title);
@@ -60,23 +83,32 @@ async function generateUniqueSlug(
   // Limit to 60 characters
   base = base.slice(0, 60);
 
-  // Check for conflicts
+  // Check for conflicts - now considering (user_id, slug, locale)
   let slug = base;
   let counter = 1;
 
   while (true) {
+    // Build condition based on locale (NULL needs special handling)
+    const conditions = [
+      eq(posts.userId, userId),
+      eq(posts.slug, slug),
+    ];
+    if (locale) {
+      conditions.push(eq(posts.locale, locale));
+    }
+
     const existing = await db
-      .select({ id: posts.id })
+      .select({ id: posts.id, locale: posts.locale })
       .from(posts)
-      .where(
-        and(
-          eq(posts.userId, userId),
-          eq(posts.slug, slug),
-        ),
-      )
+      .where(and(...conditions))
       .get();
 
+    // If no match, or locale doesn't match (for NULL locale case), we're good
     if (!existing || (excludePostId && existing.id === excludePostId)) {
+      break;
+    }
+    // For NULL locale, check explicitly
+    if (locale === null && existing.locale !== null) {
       break;
     }
 
@@ -112,10 +144,11 @@ export async function createPost(
   contentBucket: R2Bucket,
   userId: string,
   input: CreatePostInput,
-): Promise<Post> {
+): Promise<{ post: Post; translations: TranslationInfo[] }> {
   const id = generateId();
   const timestamp = now();
-  const slug = input.slug || await generateUniqueSlug(db, userId, input.title);
+  const locale = input.locale || null;
+  const slug = input.slug || await generateUniqueSlug(db, userId, input.title, locale);
   const contentKey = `content/${userId}/${id}.md`;
   const excerpt = generateExcerpt(input.content);
 
@@ -144,6 +177,8 @@ export async function createPost(
     contentKey,
     excerpt,
     status: 'draft',
+    locale,
+    translationStatus: 'ready',
     createdAt: timestamp,
     updatedAt: timestamp,
   });
@@ -154,7 +189,42 @@ export async function createPost(
     .set({ status: 'completed' })
     .where(eq(outbox.id, outboxId));
 
-  return {
+  // 5. Create translation placeholders if requested
+  const translations: TranslationInfo[] = [];
+  if (input.translateTo && input.translateTo.length > 0) {
+    // NULL locale is treated as 'ja'
+    const originalLocale = locale ?? 'ja';
+    for (const targetLocale of input.translateTo) {
+      // Skip if same as original locale
+      if (targetLocale === originalLocale) continue;
+
+      const translationId = generateId();
+      await db.insert(posts).values({
+        id: translationId,
+        userId,
+        // NULL for pending translations
+        slug: null,
+        title: null,
+        contentKey: null,
+        excerpt: null,
+        status: 'draft',
+        locale: targetLocale,
+        originalPostId: id,
+        translationStatus: 'pending',
+        sourceRevision: timestamp, // Track which version we're translating
+        createdAt: timestamp,
+        updatedAt: timestamp,
+      });
+
+      translations.push({
+        id: translationId,
+        locale: targetLocale,
+        status: 'pending',
+      });
+    }
+  }
+
+  const post: Post = {
     id,
     userId,
     slug,
@@ -165,7 +235,16 @@ export async function createPost(
     publishedAt: null,
     createdAt: timestamp,
     updatedAt: timestamp,
+    locale,
+    originalPostId: null,
+    translationStatus: 'ready',
+    sourceRevision: null,
+    translatedAt: null,
+    translationLocked: 0,
+    lastTranslationError: null,
   };
+
+  return { post, translations };
 }
 
 /**
@@ -256,23 +335,100 @@ export async function updatePost(
   }
 
   if (input.slug !== undefined) {
-    // Validate slug uniqueness
-    const slug = await generateUniqueSlug(db, userId, input.slug, postId);
+    // Validate slug uniqueness (use existing locale)
+    const slug = await generateUniqueSlug(db, userId, input.slug, existing.locale, postId);
     updates.slug = slug;
   }
 
   if (input.content !== undefined) {
-    // Update content in R2
-    await contentBucket.put(existing.contentKey, input.content, {
+    let contentKey = existing.contentKey;
+
+    // If contentKey is NULL (pending translation), create a new one
+    if (!contentKey) {
+      contentKey = `content/${userId}/${postId}.md`;
+      updates.contentKey = contentKey;
+    }
+
+    // Upload content to R2
+    await contentBucket.put(contentKey, input.content, {
       httpMetadata: { contentType: 'text/markdown' },
     });
     updates.excerpt = generateExcerpt(input.content);
+  }
+
+  // Handle translation-specific fields (only for translations)
+  if (existing.originalPostId) {
+    // If content is being updated, mark as ready and update metadata
+    if (input.content !== undefined) {
+      // Get the original post to update source_revision and check publish status
+      const originalPost = await db
+        .select({ updatedAt: posts.updatedAt, status: posts.status })
+        .from(posts)
+        .where(eq(posts.id, existing.originalPostId))
+        .get();
+
+      updates.translationStatus = 'ready';
+      updates.translatedAt = timestamp;
+      updates.lastTranslationError = null; // Clear any previous error
+      if (originalPost) {
+        updates.sourceRevision = originalPost.updatedAt;
+        // Auto-publish translation if original is already published
+        if (originalPost.status === 'published') {
+          updates.status = 'published';
+          updates.publishedAt = timestamp;
+        }
+      }
+    }
+
+    // Allow explicit status updates (e.g., marking as failed)
+    if (input.translationStatus !== undefined) {
+      // Validate that 'ready' can only be set if content exists
+      if (input.translationStatus === 'ready') {
+        // Check if we have the required fields (considering both existing and updates)
+        const finalContentKey = updates.contentKey ?? existing.contentKey;
+        const finalTitle = updates.title ?? existing.title;
+        const finalSlug = updates.slug ?? existing.slug;
+
+        if (!finalContentKey || !finalTitle || !finalSlug) {
+          // Cannot set ready without required fields - ignore the status change
+          // The status will only become 'ready' through content update flow
+        } else {
+          updates.translationStatus = input.translationStatus;
+        }
+      } else {
+        updates.translationStatus = input.translationStatus;
+      }
+    }
+
+    // Allow setting error message
+    if (input.lastTranslationError !== undefined) {
+      updates.lastTranslationError = input.lastTranslationError;
+    }
+
+    // Allow setting translation lock
+    if (input.translationLocked !== undefined) {
+      updates.translationLocked = input.translationLocked ? 1 : 0;
+    }
   }
 
   await db
     .update(posts)
     .set(updates)
     .where(eq(posts.id, postId));
+
+  // If this is an original post (not a translation) and content OR title was updated,
+  // mark unlocked translations as pending for re-translation
+  if (!existing.originalPostId && (input.content !== undefined || input.title !== undefined)) {
+    await db
+      .update(posts)
+      .set({ translationStatus: 'pending' })
+      .where(
+        and(
+          eq(posts.originalPostId, postId),
+          eq(posts.translationLocked, 0),
+        ),
+      );
+  }
 
   return {
     ...existing,
@@ -293,8 +449,10 @@ export async function deletePost(
   const existing = await getPost(db, postId, userId);
   if (!existing) return false;
 
-  // Delete content from R2
-  await contentBucket.delete(existing.contentKey);
+  // Delete content from R2 (if exists)
+  if (existing.contentKey) {
+    await contentBucket.delete(existing.contentKey);
+  }
 
   // Delete from D1
   await db.delete(posts).where(eq(posts.id, postId));
@@ -303,7 +461,144 @@ export async function deletePost(
 }
 
 /**
- * Publish a post
+ * Add translation placeholders to an existing post
+ */
+export async function addTranslations(
+  db: Database,
+  postId: string,
+  userId: string,
+  locales: string[],
+): Promise<{ translations: TranslationInfo[]; errors: string[] }> {
+  const existing = await getPost(db, postId, userId);
+  if (!existing) {
+    return { translations: [], errors: ['Post not found'] };
+  }
+
+  // Cannot add translations to a translation
+  if (existing.originalPostId) {
+    return { translations: [], errors: ['Cannot add translations to a translation'] };
+  }
+
+  const timestamp = now();
+  const translations: TranslationInfo[] = [];
+  const errors: string[] = [];
+
+  for (const locale of locales) {
+    // Skip if same as original locale (NULL is treated as 'ja')
+    const originalLocale = existing.locale ?? 'ja';
+    if (locale === originalLocale) {
+      errors.push(`Skipped ${locale}: same as original`);
+      continue;
+    }
+
+    // Check if translation already exists
+    const existingTranslation = await db
+      .select({ id: posts.id })
+      .from(posts)
+      .where(
+        and(
+          eq(posts.originalPostId, postId),
+          eq(posts.locale, locale),
+        ),
+      )
+      .get();
+
+    if (existingTranslation) {
+      errors.push(`Skipped ${locale}: translation already exists`);
+      continue;
+    }
+
+    const translationId = generateId();
+    await db.insert(posts).values({
+      id: translationId,
+      userId,
+      slug: null,
+      title: null,
+      contentKey: null,
+      excerpt: null,
+      status: 'draft',
+      locale,
+      originalPostId: postId,
+      translationStatus: 'pending',
+      sourceRevision: existing.updatedAt,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+    });
+
+    translations.push({
+      id: translationId,
+      locale,
+      status: 'pending',
+      sourceRevision: existing.updatedAt,
+    });
+  }
+
+  return { translations, errors };
+}
+
+/**
+ * Get translations for a post
+ */
+export async function getTranslations(
+  db: Database,
+  postId: string,
+  userId: string,
+): Promise<TranslationInfo[]> {
+  const results = await db
+    .select({
+      id: posts.id,
+      locale: posts.locale,
+      status: posts.translationStatus,
+      translatedAt: posts.translatedAt,
+      sourceRevision: posts.sourceRevision,
+    })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.originalPostId, postId),
+        eq(posts.userId, userId),
+      ),
+    );
+
+  return results
+    .filter((r): r is { id: string; locale: string; status: string; translatedAt: string | null; sourceRevision: string | null } =>
+      r.locale !== null && r.status !== null
+    )
+    .map(r => ({
+      id: r.id,
+      locale: r.locale,
+      status: r.status,
+      translatedAt: r.translatedAt,
+      sourceRevision: r.sourceRevision,
+    }));
+}
+
+/**
+ * Get a translation by locale
+ */
+export async function getTranslationByLocale(
+  db: Database,
+  postId: string,
+  userId: string,
+  locale: string,
+): Promise<Post | null> {
+  const translation = await db
+    .select()
+    .from(posts)
+    .where(
+      and(
+        eq(posts.originalPostId, postId),
+        eq(posts.userId, userId),
+        eq(posts.locale, locale),
+      ),
+    )
+    .get();
+
+  return translation ?? null;
+}
+
+/**
+ * Publish a post (and its ready translations if this is an original)
  */
 export async function publishPost(
   db: Database,
@@ -315,6 +610,7 @@ export async function publishPost(
 
   const timestamp = now();
 
+  // Publish the post itself
   await db
     .update(posts)
     .set({
@@ -323,6 +619,23 @@ export async function publishPost(
       updatedAt: timestamp,
     })
     .where(eq(posts.id, postId));
+
+  // If this is an original post (not a translation), also publish ready translations
+  if (!existing.originalPostId) {
+    await db
+      .update(posts)
+      .set({
+        status: 'published',
+        publishedAt: timestamp,
+        updatedAt: timestamp,
+      })
+      .where(
+        and(
+          eq(posts.originalPostId, postId),
+          eq(posts.translationStatus, 'ready'),
+        ),
+      );
+  }
 
   return {
     ...existing,

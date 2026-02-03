@@ -50,7 +50,7 @@ previewRoutes.get('/:subdomain/:slug', async (c) => {
     )
     .get();
 
-  if (!post) {
+  if (!post || !post.contentKey || !post.title || !post.slug) {
     return c.text('Post not found', 404);
   }
 
@@ -104,7 +104,7 @@ previewRoutes.get('/:subdomain', async (c) => {
   }
 
   // Get published posts
-  const publishedPosts = await db
+  const allPosts = await db
     .select({
       slug: posts.slug,
       title: posts.title,
@@ -119,6 +119,12 @@ previewRoutes.get('/:subdomain', async (c) => {
       ),
     )
     .orderBy(posts.publishedAt);
+
+  // Filter out posts with null slug or title (pending translations)
+  const publishedPosts = allPosts.filter(
+    (p): p is { slug: string; title: string; excerpt: string | null; publishedAt: string | null } =>
+      p.slug !== null && p.title !== null
+  );
 
   // Generate index page
   const html = generateIndexPage(subdomain, publishedPosts, serviceDomain);

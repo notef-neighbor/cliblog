@@ -7,6 +7,7 @@ export const users = sqliteTable('users', {
   subdomain: text('subdomain').notNull().unique(),
   theme: text('theme').default('default'),
   settings: text('settings').default('{}'),       // JSON
+  defaultTranslationLocales: text('default_translation_locales'), // JSON array: ["en", "zh"]
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 });
@@ -30,18 +31,26 @@ export const apiKeys = sqliteTable('api_keys', {
 export const posts = sqliteTable('posts', {
   id: text('id').primaryKey(),
   userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  slug: text('slug').notNull(),
-  title: text('title').notNull(),
-  contentKey: text('content_key').notNull(),      // R2 key
+  slug: text('slug'),                             // NULL allowed for pending translations
+  title: text('title'),                           // NULL allowed for pending translations
+  contentKey: text('content_key'),                // R2 key, NULL allowed for pending translations
   excerpt: text('excerpt'),
   tags: text('tags').default('[]'),               // JSON array ※v1.0では未使用、将来拡張のため保持
   status: text('status').default('draft'),        // draft | published
   publishedAt: text('published_at'),
+  // i18n columns
+  locale: text('locale'),                         // "ja", "en", "zh" etc. NULL = legacy (treated as "ja")
+  originalPostId: text('original_post_id'),       // Self-reference to posts.id (FK constraint in migration)
+  translationStatus: text('translation_status').default('ready'), // pending | ready | failed
+  sourceRevision: text('source_revision'),        // UTC ISO-8601: YYYY-MM-DDTHH:MM:SS.sssZ
+  translatedAt: text('translated_at'),            // UTC ISO-8601
+  translationLocked: integer('translation_locked').default(0), // 1 = manual edit, skip auto re-translation
+  lastTranslationError: text('last_translation_error'),
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at').notNull(),
 }, (table) => ({
   userStatusIdx: index('idx_posts_user_status').on(table.userId, table.status),
-  userSlugUnique: uniqueIndex('idx_posts_user_slug').on(table.userId, table.slug),
+  // Note: idx_posts_user_slug is dropped, replaced by idx_posts_slug_locale
 }));
 
 // Assets (v1.0: 画像のみ)

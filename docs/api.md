@@ -118,6 +118,7 @@ curl -X POST https://api.cliblog.com/v1/auth/register \
 | subdomain | string | ✓ | サブドメイン（3-30文字、英小文字・数字・ハイフン） |
 
 > ✅ `email` は任意です。未指定の場合は `null` として保存されます。
+> 未指定にする場合は、リクエストから `email` フィールドを省略してください。
 
 **レスポンス (201):**
 ```json

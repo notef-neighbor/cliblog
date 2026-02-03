@@ -58,7 +58,7 @@ publicRoutes.get('/:slug', async (c) => {
     )
     .get();
 
-  if (!post) {
+  if (!post || !post.contentKey || !post.title || !post.slug) {
     return c.text('Post not found', 404);
   }
 
@@ -119,8 +119,8 @@ publicRoutes.get('/', async (c) => {
     return c.text('Blog not found', 404);
   }
 
-  // Get published posts
-  const publishedPosts = await db
+  // Get published posts (filter out pending translations with null slug/title)
+  const allPosts = await db
     .select({
       slug: posts.slug,
       title: posts.title,
@@ -135,6 +135,12 @@ publicRoutes.get('/', async (c) => {
       ),
     )
     .orderBy(posts.publishedAt);
+
+  // Filter out posts with null slug or title (pending translations)
+  const publishedPosts = allPosts.filter(
+    (p): p is { slug: string; title: string; excerpt: string | null; publishedAt: string | null } =>
+      p.slug !== null && p.title !== null
+  );
 
   // Generate index page
   const html = generateIndexPage(subdomain, publishedPosts, serviceDomain);

@@ -65,36 +65,6 @@ function canGrantPermissions(callerPerms: string, requestedPerms: string[]): boo
 }
 
 /**
- * GET /v1/auth/check-email - Check if email is already registered
- * Returns subdomain if exists (for guiding users to copy config)
- */
-authRoutes.get('/check-email', async (c) => {
-  const email = c.req.query('email');
-
-  if (!email || !email.includes('@')) {
-    throw new AppError(
-      'auth.invalid_email',
-      400,
-      'Bad Request',
-      'Valid email is required',
-    );
-  }
-
-  const db = createDb(c.env.DB);
-
-  const existingUser = await db
-    .select({ subdomain: users.subdomain })
-    .from(users)
-    .where(eq(users.email, email))
-    .get();
-
-  return c.json({
-    exists: !!existingUser,
-    subdomain: existingUser?.subdomain ?? null,
-  });
-});
-
-/**
  * POST /v1/auth/register - Self-service registration
  * Creates a new user and returns an API key
  */
@@ -113,7 +83,7 @@ authRoutes.post('/register', async (c) => {
       'auth.invalid_email',
       400,
       'Bad Request',
-      'Valid email is required',
+      'Valid email is required when provided',
     );
   }
 

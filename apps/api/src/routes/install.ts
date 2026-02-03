@@ -66,6 +66,10 @@ When the user says "I want to start a blog" or "Register me":
    - Subdomain (required; lowercase letters, numbers, hyphen; must start with a letter)
    - Email (optional; not used for login)
 
+   Ask explicitly (to avoid confusion):
+   - Japanese: 「サブドメイン（必須）」「メールアドレス（任意・ログインには使いません／空でもOK）」
+   - English: "Subdomain (required)" "Email (optional, not used for login, can be skipped)"
+
 3. Call register:
    \`\`\`bash
    curl -s -X POST "\${API_URL}/v1/auth/register" \\
@@ -103,18 +107,99 @@ When the user asks to write or publish a post:
      -d '{
        "title": "Post title",
        "slug": "url-friendly-slug",
-       "content": "# Heading\\n\\nBody..."
+       "content": "# Heading\\n\\nBody...",
+       "locale": "ja"
      }'
    \`\`\`
+   - \`locale\`: Language code of the post (ja, en, zh, ko, fr, de, es). Detect from content.
 4. Publish:
    \`\`\`bash
    curl -s -X POST "\${API_URL}/v1/posts/\${POST_ID}/publish" \\
      -H "Authorization: Bearer \${API_KEY}"
    \`\`\`
-5. Reply with:
+5. Reply with URL:
    \`\`\`
    \${blogUrl}/\${slug}
    \`\`\`
+6. **Proactively offer translation:**
+   - Japanese: 「この記事を英語や他の言語に翻訳して公開しましょうか？」
+   - English: "Would you like me to translate this post into other languages?"
+
+## Translation (proactive support)
+
+After publishing a post, offer to translate it. If the user accepts:
+
+1. Add translation placeholders to the existing post:
+   \`\`\`bash
+   curl -s -X POST "\${API_URL}/v1/posts/\${POST_ID}/translations" \\
+     -H "Authorization: Bearer \${API_KEY}" \\
+     -H "Content-Type: application/json" \\
+     -d '{ "locales": ["en", "zh"] }'
+   \`\`\`
+   Response includes translation IDs for each locale.
+
+2. For each translation in the response:
+   - Generate translated title, content, and slug (SEO-friendly in target language)
+   - Update the translation:
+     \`\`\`bash
+     curl -s -X PUT "\${API_URL}/v1/posts/\${TRANSLATION_ID}" \\
+       -H "Authorization: Bearer \${API_KEY}" \\
+       -H "Content-Type: application/json" \\
+       -d '{
+         "title": "Translated Title",
+         "slug": "translated-slug",
+         "content": "# Translated content..."
+       }'
+     \`\`\`
+   - Translation is auto-published if original is already published.
+
+3. On success, show the translated URL:
+   \`\`\`
+   \${blogUrl}/\${translated-slug}?lang=en
+   \`\`\`
+
+4. On failure, mark as failed:
+   \`\`\`bash
+   curl -s -X PUT "\${API_URL}/v1/posts/\${TRANSLATION_ID}" \\
+     -H "Authorization: Bearer \${API_KEY}" \\
+     -H "Content-Type: application/json" \\
+     -d '{
+       "translation_status": "failed",
+       "last_translation_error": "Error message"
+     }'
+   \`\`\`
+   Then ask user if they want to retry.
+
+## Editing and re-translation
+
+When the user edits a post:
+
+1. After updating the original, check for pending translations:
+   \`\`\`bash
+   curl -s "\${API_URL}/v1/posts/\${POST_ID}/translations" \\
+     -H "Authorization: Bearer \${API_KEY}"
+   \`\`\`
+
+2. If any translation has \`status: "pending"\`:
+   - Inform user: 「翻訳も更新が必要です。更新しますか？」/ "Translations need updating. Should I update them?"
+   - If yes, re-translate each pending translation using the same flow above.
+
+3. To lock a translation from auto-updates (manual edit):
+   \`\`\`bash
+   curl -s -X PUT "\${API_URL}/v1/posts/\${TRANSLATION_ID}" \\
+     -H "Authorization: Bearer \${API_KEY}" \\
+     -H "Content-Type: application/json" \\
+     -d '{ "translation_locked": true }'
+   \`\`\`
+
+## Consistency check
+
+Before translating, verify source revision:
+
+1. Get original's \`updatedAt\` from GET /v1/posts/:id
+2. Get translation's \`sourceRevision\` from GET /v1/posts/:id/translations/:locale
+3. If \`sourceRevision < updatedAt\`, the original was updated after last translation.
+   - Warn user and re-translate with latest content.
 
 ## Image upload
 
