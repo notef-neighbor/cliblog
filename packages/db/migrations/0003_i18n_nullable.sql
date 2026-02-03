@@ -1,4 +1,11 @@
--- i18n: Make slug, title, content_key nullable for pending translations
+-- Migration: Make slug, title, content_key nullable for pending translations
+-- WARNING: Destructive migration - creates new table, copies data, drops old table
+-- Recovery: If migration fails mid-way:
+--   1. Check if posts_new exists: SELECT name FROM sqlite_master WHERE name='posts_new'
+--   2. If posts_new has data and posts is gone: ALTER TABLE posts_new RENAME TO posts
+--   3. If both exist: DROP TABLE posts_new and retry migration
+--   4. Recreate indexes manually if needed
+-- D1/SQLite limitation: DDL statements auto-commit, so BEGIN/COMMIT won't help
 PRAGMA foreign_keys=OFF;
 --> statement-breakpoint
 CREATE TABLE `posts_new` (

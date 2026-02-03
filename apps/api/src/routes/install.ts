@@ -155,7 +155,7 @@ After publishing a post, offer to translate it. If the user accepts:
 
 3. On success, show the translated URL:
    \`\`\`
-   \${blogUrl}/\${translated-slug}?lang=en
+   \${blogUrl}/\${TRANSLATED_SLUG}?lang=en
    \`\`\`
 
 4. On failure, mark as failed:

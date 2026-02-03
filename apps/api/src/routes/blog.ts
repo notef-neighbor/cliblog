@@ -14,6 +14,13 @@ import {
   CACHE_HEADERS,
 } from '../lib/renderer';
 
+// Locale mapping for date formatting
+const DATE_LOCALE_MAP: Record<string, string> = {
+  ja: 'ja-JP', en: 'en-US', zh: 'zh-CN', ko: 'ko-KR',
+  fr: 'fr-FR', de: 'de-DE', es: 'es-ES', pt: 'pt-BR',
+  it: 'it-IT', ru: 'ru-RU', ar: 'ar-SA', hi: 'hi-IN',
+};
+
 export const blogRoutes = new Hono<{ Bindings: Env }>();
 
 /**
@@ -301,27 +308,7 @@ blogRoutes.get('/:subdomain', async (c) => {
     }
   }
 
-  // Get original posts only (no translations) - originalPostId is NULL
-  const originalPosts = await db
-    .select({
-      id: posts.id,
-      slug: posts.slug,
-      title: posts.title,
-      excerpt: posts.excerpt,
-      locale: posts.locale,
-      publishedAt: posts.publishedAt,
-    })
-    .from(posts)
-    .where(
-      and(
-        eq(posts.userId, user.id),
-        eq(posts.status, 'published'),
-      ),
-    )
-    .orderBy(desc(posts.publishedAt));
-
-  // Filter to only original posts (originalPostId is NULL)
-  // Note: We need to fetch originalPostId separately since it might be null
+  // Get all published posts (including translations)
   const allPostsWithOriginal = await db
     .select({
       id: posts.id,
@@ -412,7 +399,8 @@ function renderBlogPage(options: {
   baseUrl?: string;
 }): string {
   const { title, content, subdomain, publishedAt, slug, currentLocale = 'ja', hreflangData = [], baseUrl = '' } = options;
-  const date = publishedAt ? new Date(publishedAt).toLocaleDateString('ja-JP') : '';
+  const dateLocale = DATE_LOCALE_MAP[currentLocale] || 'en-US';
+  const date = publishedAt ? new Date(publishedAt).toLocaleDateString(dateLocale) : '';
 
   // Generate hreflang tags
   const hreflangTags = hreflangData.length > 0
@@ -497,7 +485,7 @@ function generateBlogIndexPage(
 ): string {
   const pageLocale = requestedLocale || 'ja';
   const postsHtml = postList.map(p => {
-    const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString(pageLocale === 'ja' ? 'ja-JP' : 'en-US') : '';
+    const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString(DATE_LOCALE_MAP[pageLocale] || 'en-US') : '';
     const postLocale = p.locale || 'ja';
     const langParam = postLocale !== 'ja' ? `?lang=${postLocale}` : '';
     return `

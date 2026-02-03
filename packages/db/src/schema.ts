@@ -41,6 +41,7 @@ export const posts = sqliteTable('posts', {
   // i18n columns
   locale: text('locale'),                         // "ja", "en", "zh" etc. NULL = legacy (treated as "ja")
   originalPostId: text('original_post_id'),       // Self-reference to posts.id (FK constraint in migration)
+  // CHECK: originalPostId IS NULL OR locale IS NOT NULL (enforced in migration 0004)
   translationStatus: text('translation_status').default('ready'), // pending | ready | failed
   sourceRevision: text('source_revision'),        // UTC ISO-8601: YYYY-MM-DDTHH:MM:SS.sssZ
   translatedAt: text('translated_at'),            // UTC ISO-8601

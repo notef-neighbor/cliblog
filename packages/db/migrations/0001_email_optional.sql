@@ -1,3 +1,7 @@
+-- Migration: Make email optional
+-- WARNING: Destructive migration - creates new table, copies data, drops old table
+-- Recovery: If migration fails mid-way, restore from backup or re-run from scratch
+-- D1/SQLite limitation: DDL statements auto-commit, so BEGIN/COMMIT won't help
 PRAGMA foreign_keys=OFF;
 --> statement-breakpoint
 CREATE TABLE `users_new` (

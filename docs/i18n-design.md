@@ -25,7 +25,7 @@
 ```sql
 -- カラム追加
 ALTER TABLE posts ADD COLUMN locale TEXT;
-ALTER TABLE posts ADD COLUMN original_post_id TEXT REFERENCES posts(id);
+ALTER TABLE posts ADD COLUMN original_post_id TEXT REFERENCES posts(id) ON DELETE CASCADE;
 ALTER TABLE posts ADD COLUMN translation_status TEXT DEFAULT 'ready'
   CHECK (translation_status IN ('pending', 'ready', 'failed'));
 ALTER TABLE posts ADD COLUMN source_revision TEXT;  -- ISO-8601 形式の updated_at
@@ -49,6 +49,7 @@ CREATE UNIQUE INDEX idx_posts_slug_locale
 ```sql
 ALTER TABLE users ADD COLUMN default_translation_locales TEXT;
 -- JSON 配列: ["en", "zh"] など
+-- アプリ層で JSON.parse() 時にバリデーション（配列かつ文字列要素のみ）
 ```
 
 ### カラム説明
@@ -58,7 +59,7 @@ ALTER TABLE users ADD COLUMN default_translation_locales TEXT;
 | `locale` | TEXT | 投稿の言語コード（"ja", "en", "zh" など）。NULL = 旧データ（`ja` として扱う） |
 | `original_post_id` | TEXT | 翻訳元の投稿ID。NULL = 原文 |
 | `translation_status` | TEXT | `pending` / `ready` / `failed`。CHECK 制約あり |
-| `source_revision` | TEXT | 翻訳元の `updated_at`（UTC 固定、`YYYY-MM-DDTHH:MM:SS.sssZ` 形式）。文字列比較で時刻順を保証 |
+| `source_revision` | TEXT | 翻訳元の `updated_at`（UTC 固定、`YYYY-MM-DDTHH:MM:SS.sssZ` 形式）。**ミリ秒は必ず3桁ゼロパディング**（例: `.001Z` not `.1Z`）。文字列比較で時刻順を保証 |
 | `translated_at` | TEXT | 翻訳生成日時（ISO-8601 形式） |
 | `translation_locked` | INTEGER | 1 = 手動編集済み、自動再翻訳を抑止 |
 | `last_translation_error` | TEXT | 翻訳失敗時のエラーメッセージ |
@@ -130,8 +131,9 @@ ALTER TABLE users ADD COLUMN default_translation_locales TEXT;
 
 **常に指定された ID の投稿のみを返却。**
 
-- `locale` パラメータは無視（または 400 エラー）
+- `locale` パラメータは**無視される**（エラーにはしない）
 - 翻訳を取得したい場合は `/translations` エンドポイントを使用
+- **注:** `?locale=en` を指定しても無視され、常にその ID の投稿を返す
 
 ```json
 {
@@ -182,6 +184,12 @@ ALTER TABLE users ADD COLUMN default_translation_locales TEXT;
 1. `(user_id, slug, locale)` で厳密検索
 2. 見つからなければ原文（`original_post_id IS NULL` かつ同一 slug）にフォールバック
 3. それでもなければ 404
+
+**別 slug を持つ翻訳の場合:**
+- 翻訳が原文と異なる slug を持つ場合（例: ja=`hajimete-no-oss`, en=`my-first-oss`）
+- 原文 URL に `?lang=en` を付けても、英語版の slug へはリダイレクトしない
+- **運用ルール:** 別 slug の翻訳は、その翻訳固有の URL で直接アクセス
+- Accept-Language による自動切替は同一 slug の翻訳のみ対象
 
 **翻訳が pending の場合:**
 ```html
@@ -299,6 +307,13 @@ Skill: 「翻訳更新完了！」
 - 翻訳更新前に原文が再更新された場合、翻訳は最新版に対して行う
 - 古い `source_revision` の翻訳リクエストは警告を出す
 
+### slug 重複時のエラーハンドリング
+
+- DB には `(user_id, slug, locale)` のユニーク制約がある
+- 同時編集で slug が衝突した場合、UNIQUE 制約エラーが発生
+- アプリ層でキャッチし、409 Conflict を返却
+- Skill 側でリトライまたはユーザーに slug 変更を促す
+
 ### 翻訳の手動編集
 
 1. ユーザーが翻訳を直接編集
@@ -337,6 +352,21 @@ ALTER TABLE posts ADD COLUMN last_translation_error TEXT;
 
 ALTER TABLE users ADD COLUMN default_translation_locales TEXT;
 ```
+
+### Phase 1b: 既存データのバックフィル
+
+```sql
+-- 既存投稿の locale が NULL の場合、ja として扱うが DB 上は NULL のまま維持
+-- （アプリ層で NULL → ja にフォールバック）
+
+-- 翻訳追加時に原文の locale を明示的に設定
+-- 例: 日本語投稿に英語翻訳を追加する場合
+UPDATE posts SET locale = 'ja' WHERE id = :original_id AND locale IS NULL;
+```
+
+**運用ルール:**
+- 既存の `locale = NULL` は `ja` として表示するが、DB は更新しない
+- 翻訳を追加する時点で、原文の `locale` を明示的に設定
 
 ### Phase 2: インデックス追加
 
