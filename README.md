@@ -12,9 +12,22 @@ A simple REST API for blogging, designed to work seamlessly with AI tools like C
 
 - **API-first**: No web UI, just a clean REST API
 - **AI-friendly**: Works with Claude Code via Skills
+- **Multi-language**: Translate posts into 100+ languages with one command
 - **Markdown-native**: Posts are stored as raw Markdown
 - **Self-hostable**: Deploy to your own Cloudflare account
 - **Data ownership**: Export or delete your data anytime
+
+## Multi-Language Support (v1.1)
+
+CLIBLOG supports automatic translation and multi-language publishing:
+
+1. Write and publish your post in any language
+2. Claude suggests: "Would you like me to translate this?"
+3. Say "yes" and translations are auto-generated and published
+
+Readers see content in their browser language automatically, or can specify `?lang=xx` in the URL.
+
+See [docs/i18n-design.md](docs/i18n-design.md) for technical details.
 
 ## Quick Start
 
@@ -139,6 +152,23 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions and technical detail
 - **Database**: Cloudflare D1
 - **Storage**: Cloudflare R2
 - **ORM**: Drizzle
+
+## Changelog
+
+### v1.1 (2026-02-03)
+- **Multi-language support**: Translate posts into 100+ languages
+- **Translation API**: `POST /v1/posts/:id/translations`, `GET /v1/posts/:id/translations`
+- **Auto language detection**: `?lang=` parameter and Accept-Language header support
+- **SEO optimization**: Automatic canonical and hreflang tags
+- **Blog index localization**: Titles displayed in reader's language
+- **Email optional**: Registration no longer requires email
+
+### v1.0 (2026-02-02)
+- Initial release
+- Posts API (CRUD + publish)
+- Assets API (image upload)
+- Markdown rendering
+- Claude Code skill integration
 
 ## License
 
