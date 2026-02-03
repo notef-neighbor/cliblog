@@ -411,6 +411,15 @@ function renderBlogPage(options: {
 
   const canonicalUrl = `${baseUrl}/b/${subdomain}/${slug}?lang=${currentLocale}`;
 
+  // Generate language switcher links
+  const langLinks = hreflangData.length > 1
+    ? hreflangData.map(h =>
+        h.locale === currentLocale
+          ? `<span class="lang-current">${h.locale.toUpperCase()}</span>`
+          : `<a href="/b/${subdomain}/${h.slug}?lang=${h.locale}">${h.locale.toUpperCase()}</a>`
+      ).join(' / ')
+    : '';
+
   return `<!DOCTYPE html>
 <html lang="${currentLocale}">
 <head>
@@ -421,44 +430,47 @@ function renderBlogPage(options: {
 ${hreflangTags}
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #1a1a1a;
-      --muted: #666666;
-      --link: #0066cc;
-      --code-bg: #f5f5f5;
-      --border: #e5e5e5;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1a1a1a;
-        --text: #e5e5e5;
-        --muted: #999999;
-        --link: #66b3ff;
-        --code-bg: #2d2d2d;
-        --border: #404040;
-      }
+      --bg: #1a1a1a;
+      --text: #e8e6e3;
+      --muted: #8a8a8a;
+      --link: #6ba4f8;
+      --code-bg: #252525;
+      --border: #333;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
-      line-height: 1.8;
+      font-family: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+      line-height: 1.7;
       color: var(--text);
       background: var(--bg);
       margin: 0;
-      padding: 2rem 1rem;
+      padding: 60px 24px;
+      font-size: 18px;
     }
-    main { max-width: 720px; margin: 0 auto; }
-    h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-    .meta { color: var(--muted); margin-bottom: 2rem; font-size: 0.875rem; }
-    .meta a { color: var(--link); text-decoration: none; }
-    .meta a:hover { text-decoration: underline; }
-    article img { max-width: 100%; height: auto; }
-    article pre { background: var(--code-bg); padding: 1rem; overflow-x: auto; border-radius: 4px; }
-    article code { background: var(--code-bg); padding: 0.2em 0.4em; border-radius: 3px; }
+    main { max-width: 680px; margin: 0 auto; }
+    h1 { font-size: 24px; font-weight: normal; margin-bottom: 16px; line-height: 1.5; }
+    .meta { color: var(--muted); margin-bottom: 48px; font-size: 14px; }
+    .meta a { color: var(--muted); text-decoration: none; }
+    .meta a:hover { color: var(--link); }
+    article h2 { font-size: 18px; font-weight: normal; margin: 2.5em 0 1em; }
+    article h3 { font-size: 18px; font-weight: normal; margin: 2em 0 0.8em; color: var(--muted); }
+    article p { margin-bottom: 1.5em; }
+    article img { max-width: 100%; height: auto; margin: 2em 0; }
+    article pre { background: var(--code-bg); padding: 1.5em; overflow-x: auto; margin: 1.5em 0; font-size: 14px; line-height: 1.6; }
+    article code { font-family: inherit; }
     article pre code { background: none; padding: 0; }
-    article blockquote { border-left: 4px solid var(--border); margin-left: 0; padding-left: 1rem; color: var(--muted); }
-    article a { color: var(--link); }
-    article table { border-collapse: collapse; width: 100%; }
+    article blockquote { border-left: 2px solid var(--link); margin: 1.5em 0; padding-left: 1.5em; color: var(--muted); font-style: normal; }
+    article a { color: var(--link); text-decoration: none; }
+    article a:hover { text-decoration: underline; }
+    article ul, article ol { margin: 0 0 1.5em 1.5em; }
+    article li { margin-bottom: 0.5em; }
+    article table { border-collapse: collapse; width: 100%; margin: 1.5em 0; }
     article th, article td { border: 1px solid var(--border); padding: 0.5rem; text-align: left; }
+    article figure { margin: 2em 0; }
+    article figcaption { font-size: 14px; color: var(--muted); margin-top: 8px; }
+    footer { margin-top: 80px; padding-top: 40px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); display: flex; justify-content: space-between; align-items: center; }
+    .lang-switch a { color: var(--muted); text-decoration: none; }
+    .lang-switch a:hover { color: var(--link); }
+    .lang-switch .lang-current { color: var(--text); }
   </style>
 </head>
 <body>
@@ -467,12 +479,16 @@ ${hreflangTags}
       <h1>${escapeHtml(title)}</h1>
       <p class="meta">
         ${date ? `<time datetime="${publishedAt}">${date}</time> · ` : ''}
-        <a href="/b/${escapeHtml(subdomain)}">${escapeHtml(subdomain)}'s Blog</a>
+        <a href="/b/${escapeHtml(subdomain)}">${escapeHtml(subdomain)}</a>
       </p>
     </header>
     <article>
       ${content}
     </article>
+    <footer>
+      <a href="/b/${escapeHtml(subdomain)}">← Back</a>
+      ${langLinks ? `<div class="lang-switch">${langLinks}</div>` : ''}
+    </footer>
   </main>
 </body>
 </html>`;
@@ -489,11 +505,13 @@ function generateBlogIndexPage(
     const postLocale = p.locale || 'ja';
     const langParam = postLocale !== 'ja' ? `?lang=${postLocale}` : '';
     return `
-      <article>
-        <h2><a href="/b/${subdomain}/${p.slug}${langParam}">${escapeHtml(p.title)}</a></h2>
-        ${p.excerpt ? `<p>${escapeHtml(p.excerpt)}</p>` : ''}
-        ${date ? `<time datetime="${p.publishedAt}">${date}</time>` : ''}
-      </article>
+      <li class="post-item">
+        <a href="/b/${subdomain}/${p.slug}${langParam}">
+          ${date ? `<time class="post-date" datetime="${p.publishedAt}">${date}</time>` : ''}
+          <h2 class="post-title">${escapeHtml(p.title)}</h2>
+          ${p.excerpt ? `<p class="post-excerpt">${escapeHtml(p.excerpt)}</p>` : ''}
+        </a>
+      </li>
     `;
   }).join('\n');
 
@@ -502,44 +520,43 @@ function generateBlogIndexPage(
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${escapeHtml(subdomain)}'s Blog</title>
+  <title>${escapeHtml(subdomain)}</title>
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #1a1a1a;
-      --muted: #666666;
-      --link: #0066cc;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1a1a1a;
-        --text: #e5e5e5;
-        --muted: #999999;
-        --link: #66b3ff;
-      }
+      --bg: #1a1a1a;
+      --text: #e8e6e3;
+      --muted: #8a8a8a;
+      --link: #6ba4f8;
+      --border: #333;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
-      line-height: 1.8;
+      font-family: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+      line-height: 1.7;
       color: var(--text);
       background: var(--bg);
       margin: 0;
-      padding: 2rem 1rem;
+      padding: 60px 24px;
+      font-size: 18px;
     }
-    main { max-width: 720px; margin: 0 auto; }
-    h1 { font-size: 2rem; margin-bottom: 2rem; }
-    article { margin-bottom: 2rem; }
-    article h2 { font-size: 1.25rem; margin-bottom: 0.5rem; }
-    article h2 a { color: var(--link); text-decoration: none; }
-    article h2 a:hover { text-decoration: underline; }
-    article p { margin: 0.5rem 0; color: var(--muted); }
-    time { color: var(--muted); font-size: 0.875rem; }
+    main { max-width: 680px; margin: 0 auto; }
+    .site-name { font-size: 14px; margin-bottom: 80px; letter-spacing: 0.05em; }
+    .section-title { font-size: 14px; color: var(--muted); margin-bottom: 40px; letter-spacing: 0.05em; }
+    .post-list { list-style: none; padding: 0; margin: 0; }
+    .post-item { margin-bottom: 48px; }
+    .post-item a { text-decoration: none; color: var(--text); display: block; }
+    .post-item a:hover .post-title { color: var(--link); }
+    .post-date { font-size: 14px; color: var(--muted); margin-bottom: 8px; }
+    .post-title { font-size: 18px; font-weight: normal; line-height: 1.5; transition: color 0.2s; }
+    .post-excerpt { font-size: 16px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+    footer { margin-top: 120px; padding-top: 40px; border-top: 1px solid var(--border); font-size: 14px; color: var(--muted); }
   </style>
 </head>
 <body>
   <main>
-    <h1>${escapeHtml(subdomain)}'s Blog</h1>
-    ${postList.length === 0 ? '<p>No posts yet.</p>' : postsHtml}
+    <div class="site-name">${escapeHtml(subdomain)}</div>
+    <div class="section-title">Posts</div>
+    ${postList.length === 0 ? '<p>No posts yet.</p>' : `<ul class="post-list">${postsHtml}</ul>`}
+    <footer>Focus. Write. Read.</footer>
   </main>
 </body>
 </html>`;
@@ -603,54 +620,38 @@ function renderPendingTranslationPage(options: {
   <title>Translation in Progress</title>
   <style>
     :root {
-      --bg: #ffffff;
-      --text: #1a1a1a;
-      --muted: #666666;
-      --link: #0066cc;
-      --border: #e5e5e5;
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #1a1a1a;
-        --text: #e5e5e5;
-        --muted: #999999;
-        --link: #66b3ff;
-        --border: #404040;
-      }
+      --bg: #1a1a1a;
+      --text: #e8e6e3;
+      --muted: #8a8a8a;
+      --link: #6ba4f8;
+      --border: #333;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", sans-serif;
-      line-height: 1.8;
+      font-family: 'IBM Plex Mono', 'Menlo', 'Monaco', 'Consolas', monospace;
+      line-height: 1.7;
       color: var(--text);
       background: var(--bg);
       margin: 0;
-      padding: 2rem 1rem;
+      padding: 60px 24px;
+      font-size: 18px;
     }
     main {
-      max-width: 720px;
+      max-width: 680px;
       margin: 0 auto;
       text-align: center;
-      padding: 4rem 1rem;
+      padding: 80px 0;
     }
-    .pending-box {
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 2rem;
-      background: var(--bg);
-    }
-    h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-    p { color: var(--muted); margin: 0.5rem 0; }
+    h1 { font-size: 18px; font-weight: normal; margin-bottom: 24px; }
+    p { color: var(--muted); margin: 16px 0; }
     a { color: var(--link); text-decoration: none; }
     a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <main>
-    <div class="pending-box">
-      <h1>Translation in Progress</h1>
-      <p>This article is being translated. Please wait a moment.</p>
-      <p><a href="/b/${escapeHtml(subdomain)}/${escapeHtml(slug)}?lang=${originalLocale}">Read in ${originalLocaleName} (original)</a></p>
-    </div>
+    <h1>Translation in Progress</h1>
+    <p>This article is being translated.</p>
+    <p><a href="/b/${escapeHtml(subdomain)}/${escapeHtml(slug)}?lang=${originalLocale}">Read in ${originalLocaleName}</a></p>
   </main>
 </body>
 </html>`;

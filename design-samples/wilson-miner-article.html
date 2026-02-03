@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多言語に対応しました - CLIBLOG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #ffffff;
+      --text: #333;
+      --text-secondary: #888;
+      --accent: #0066cc;
+      --border: #eee;
+      --card-bg: #fafafa;
+    }
+
+    [data-theme="dark"] {
+      --bg: #111;
+      --text: #ddd;
+      --text-secondary: #777;
+      --accent: #4da3ff;
+      --border: #2a2a2a;
+      --card-bg: #1a1a1a;
+    }
+
+    body {
+      font-family: 'Source Sans 3', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 17px;
+      line-height: 1.6;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 60px 40px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 60px;
+    }
+
+    .back {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .back:hover { color: var(--accent); }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      font-size: 13px;
+    }
+
+    .controls button {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      padding: 6px 12px;
+      border-radius: 4px;
+      transition: all 0.2s;
+    }
+
+    .controls button:hover {
+      border-color: var(--text);
+      color: var(--text);
+    }
+
+    .controls button.active {
+      background: var(--text);
+      border-color: var(--text);
+      color: var(--bg);
+    }
+
+    .article-header {
+      margin-bottom: 50px;
+    }
+
+    .article-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .article-title {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 38px;
+      font-weight: 400;
+      line-height: 1.3;
+      letter-spacing: -0.02em;
+    }
+
+    .article-content {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 19px;
+      line-height: 1.8;
+    }
+
+    .article-content p {
+      margin-bottom: 1.5em;
+    }
+
+    .article-content h2 {
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin: 3em 0 1.5em;
+    }
+
+    .article-content h3 {
+      font-family: 'Source Serif 4', Georgia, serif;
+      font-size: 22px;
+      font-weight: 600;
+      margin: 2em 0 1em;
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 1.5em 1.5em;
+    }
+
+    .article-content li {
+      margin-bottom: 0.5em;
+    }
+
+    .article-content pre {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      background: var(--card-bg);
+      padding: 1.5em;
+      margin: 2em 0;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.6;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+
+    .article-content code {
+      font-family: 'SF Mono', 'Menlo', monospace;
+      font-size: 0.9em;
+      background: var(--card-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .article-content pre code {
+      background: none;
+      padding: 0;
+    }
+
+    .article-content blockquote {
+      background: linear-gradient(135deg, var(--accent), #9933ff);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-size: 28px;
+      font-style: italic;
+      text-align: center;
+      margin: 2em 0;
+      padding: 1em 0;
+      line-height: 1.4;
+    }
+
+    .article-content a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    .article-content a:hover {
+      text-decoration: underline;
+    }
+
+    .article-content img {
+      max-width: 100%;
+      border-radius: 8px;
+      margin: 2em 0;
+    }
+
+    .article-content figure {
+      margin: 2.5em 0;
+    }
+
+    .article-content figcaption {
+      font-family: 'Source Sans 3', sans-serif;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    .article-footer {
+      margin-top: 60px;
+      padding-top: 30px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .share-buttons {
+      display: flex;
+      gap: 12px;
+    }
+
+    .share-btn {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: all 0.2s;
+    }
+
+    .share-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .next-post {
+      text-align: right;
+    }
+
+    .next-post-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .next-post a {
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .next-post a:hover {
+      color: var(--accent);
+    }
+
+    .lang-en { display: none; }
+    [data-lang="en"] .lang-ja { display: none; }
+    [data-lang="en"] .lang-en { display: block; }
+    [data-lang="en"] .lang-en.inline { display: inline; }
+    [data-lang="en"] .lang-en.flex { display: flex; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="wilson-miner-index.html" class="back">
+        <span>←</span>
+        <span class="lang-ja">一覧へ戻る</span>
+        <span class="lang-en inline">Back to posts</span>
+      </a>
+      <div class="controls">
+        <button id="lang-ja" class="active">日本語</button>
+        <button id="lang-en">EN</button>
+        <button id="theme-light" class="active">Light</button>
+        <button id="theme-dark">Dark</button>
+      </div>
+    </header>
+
+    <article>
+      <header class="article-header">
+        <div class="article-meta">
+          <time>
+            <span class="lang-ja">2026年2月3日</span>
+            <span class="lang-en inline">February 3, 2026</span>
+          </time>
+          <span>3 min read</span>
+          <span>
+            <span class="lang-ja">翻訳・国際化</span>
+            <span class="lang-en inline">i18n</span>
+          </span>
+        </div>
+        <h1 class="article-title">
+          <span class="lang-ja">多言語に対応しました</span>
+          <span class="lang-en inline">Multi-Language Support</span>
+        </h1>
+      </header>
+
+      <div class="article-content lang-ja">
+        <p>CLIBLOGに多言語対応機能を追加した。100以上の言語に翻訳できる。</p>
+
+        <p>言葉の壁を越える。ひとつの記事が、さまざまな言語で読まれる。我々が作るものが、我々を作る。そして、我々が発信するものが、世界を変える。</p>
+
+        <figure>
+          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop" alt="">
+          <figcaption>地球規模のネットワーク</figcaption>
+        </figure>
+
+        <h2>仕組み</h2>
+
+        <p>多言語対応の仕組みは、シンプルだ。記事を書いて投稿する際に、翻訳したい言語を伝えるだけ。</p>
+
+        <ol>
+          <li>記事を書く</li>
+          <li>言語を指定</li>
+          <li>数秒で完了</li>
+        </ol>
+
+        <p>読者は自分のブラウザ設定で自動的に適切な言語で読める。</p>
+
+        <h2>技術</h2>
+
+        <pre><code>locale            -- 言語コード
+original_post_id  -- 翻訳元ID
+translation_status -- 状態</code></pre>
+
+        <h3>URLの設計</h3>
+
+        <p>多言語コンテンツへのアクセスは、シンプルなパラメータで制御する。</p>
+
+        <pre><code>/b/notf/my-article          → 自動
+/b/notf/my-article?lang=ja  → 日本語
+/b/notf/my-article?lang=en  → 英語</code></pre>
+
+        <h2>使い方</h2>
+
+        <blockquote>「英語と中国語に翻訳して」</blockquote>
+
+        <p>これだけで、三つの言語で同時に公開される。</p>
+
+        <h2>これから</h2>
+
+        <ul>
+          <li>画像の多言語化</li>
+          <li>翻訳の一貫性</li>
+          <li>コミュニティレビュー</li>
+        </ul>
+
+        <p>フィードバック: <a href="https://github.com/notef-neighbor/cliblog">GitHub</a></p>
+      </div>
+
+      <div class="article-content lang-en">
+        <p>Added multi-language support to CLIBLOG. Translate to over 100 languages.</p>
+
+        <p>Cross the language barrier. One article, read in many languages. We shape our tools, and our tools shape us. And what we publish changes the world.</p>
+
+        <figure>
+          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop" alt="">
+          <figcaption>Global network</figcaption>
+        </figure>
+
+        <h2>How it works</h2>
+
+        <p>The multi-language system is simple. When you write and publish an article, just specify the languages.</p>
+
+        <ol>
+          <li>Write your article</li>
+          <li>Specify languages</li>
+          <li>Done in seconds</li>
+        </ol>
+
+        <p>Readers automatically see articles in their browser's language.</p>
+
+        <h2>Technical</h2>
+
+        <pre><code>locale            -- Language code
+original_post_id  -- Source ID
+translation_status -- State</code></pre>
+
+        <h3>URL design</h3>
+
+        <p>Access to multi-language content is controlled through simple parameters:</p>
+
+        <pre><code>/b/notf/my-article          → Auto
+/b/notf/my-article?lang=ja  → Japanese
+/b/notf/my-article?lang=en  → English</code></pre>
+
+        <h2>Usage</h2>
+
+        <blockquote>"Translate to English and Chinese"</blockquote>
+
+        <p>That's all it takes to publish in three languages at once.</p>
+
+        <h2>What's next</h2>
+
+        <ul>
+          <li>Image localization</li>
+          <li>Translation consistency</li>
+          <li>Community review</li>
+        </ul>
+
+        <p>Feedback: <a href="https://github.com/notef-neighbor/cliblog">GitHub</a></p>
+      </div>
+
+      <footer class="article-footer">
+        <div class="share-buttons">
+          <a href="#" class="share-btn">𝕏</a>
+          <a href="#" class="share-btn">in</a>
+        </div>
+        <div class="next-post">
+          <div class="next-post-label">
+            <span class="lang-ja">次の記事</span>
+            <span class="lang-en inline">Next post</span>
+          </div>
+          <a href="#">
+            <span class="lang-ja">APIキーの設計について →</span>
+            <span class="lang-en inline">On API Key Design →</span>
+          </a>
+        </div>
+      </footer>
+    </article>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    document.getElementById('theme-light').onclick = () => {
+      html.dataset.theme = 'light';
+      document.getElementById('theme-light').classList.add('active');
+      document.getElementById('theme-dark').classList.remove('active');
+    };
+
+    document.getElementById('theme-dark').onclick = () => {
+      html.dataset.theme = 'dark';
+      document.getElementById('theme-dark').classList.add('active');
+      document.getElementById('theme-light').classList.remove('active');
+    };
+
+    document.getElementById('lang-ja').onclick = () => {
+      html.dataset.lang = 'ja';
+      document.getElementById('lang-ja').classList.add('active');
+      document.getElementById('lang-en').classList.remove('active');
+    };
+
+    document.getElementById('lang-en').onclick = () => {
+      html.dataset.lang = 'en';
+      document.getElementById('lang-en').classList.add('active');
+      document.getElementById('lang-ja').classList.remove('active');
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多言語に対応しました - CLIBLOG</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #fffcf5;
+      --text: #2c2c2c;
+      --text-secondary: #7a7a7a;
+      --accent: #c54b3c;
+      --border: #e8e4dc;
+    }
+
+    [data-theme="dark"] {
+      --bg: #1c1c1c;
+      --text: #e5e5e5;
+      --text-secondary: #888;
+      --accent: #e07a6c;
+      --border: #333;
+    }
+
+    body {
+      font-family: 'Newsreader', Georgia, serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 19px;
+      line-height: 1.85;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 80px 24px;
+    }
+
+    header {
+      margin-bottom: 80px;
+    }
+
+    .back {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+      transition: color 0.2s;
+    }
+
+    .back:hover { color: var(--accent); }
+
+    .controls {
+      display: flex;
+      gap: 20px;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+    }
+
+    .controls button {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      padding: 0;
+      transition: color 0.2s;
+    }
+
+    .controls button:hover { color: var(--text); }
+    .controls button.active { color: var(--accent); }
+    .controls span { color: var(--border); }
+
+    .article-header {
+      margin-bottom: 60px;
+      text-align: center;
+    }
+
+    .article-number {
+      font-family: 'Inter', sans-serif;
+      font-size: 11px;
+      color: var(--text-secondary);
+      letter-spacing: 0.1em;
+      margin-bottom: 24px;
+    }
+
+    .article-title {
+      font-size: 32px;
+      font-weight: 400;
+      line-height: 1.4;
+      margin-bottom: 24px;
+    }
+
+    .article-date {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .article-content {
+      margin-bottom: 80px;
+    }
+
+    .article-content p {
+      margin-bottom: 1.6em;
+    }
+
+    .article-content p:first-of-type::first-letter {
+      font-size: 3.5em;
+      float: left;
+      line-height: 1;
+      margin-right: 8px;
+      margin-top: 4px;
+      color: var(--accent);
+    }
+
+    .article-content h2 {
+      font-size: 22px;
+      font-weight: 400;
+      margin: 2.5em 0 1em;
+      font-style: italic;
+    }
+
+    .article-content h3 {
+      font-size: 19px;
+      font-weight: 500;
+      margin: 2em 0 0.8em;
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 1.6em 1.5em;
+    }
+
+    .article-content li {
+      margin-bottom: 0.5em;
+    }
+
+    .article-content pre {
+      font-family: 'IBM Plex Mono', monospace;
+      background: var(--border);
+      padding: 1.5em;
+      margin: 2em 0;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.6;
+      border-radius: 4px;
+    }
+
+    .article-content blockquote {
+      font-size: 22px;
+      font-style: italic;
+      text-align: center;
+      color: var(--text-secondary);
+      margin: 2em 0;
+      padding: 1em 0;
+    }
+
+    .article-content a {
+      color: var(--accent);
+      text-decoration: underline;
+      text-decoration-color: var(--border);
+      text-underline-offset: 3px;
+    }
+
+    .article-content a:hover {
+      text-decoration-color: var(--accent);
+    }
+
+    .article-content img {
+      max-width: 100%;
+      margin: 2.5em 0;
+    }
+
+    .article-content figure {
+      margin: 2.5em 0;
+    }
+
+    .article-content figcaption {
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: center;
+      margin-top: 12px;
+      font-style: italic;
+    }
+
+    .separator {
+      text-align: center;
+      margin: 3em 0;
+      color: var(--text-secondary);
+      letter-spacing: 0.5em;
+    }
+
+    footer {
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 15px;
+      font-style: italic;
+      color: var(--text-secondary);
+    }
+
+    .lang-en { display: none; }
+    [data-lang="en"] .lang-ja { display: none; }
+    [data-lang="en"] .lang-en { display: block; }
+    [data-lang="en"] .lang-en.inline { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="craig-mod-index.html" class="back">
+        <span class="lang-ja">← 一覧へ</span>
+        <span class="lang-en inline">← Essays</span>
+      </a>
+      <div class="controls">
+        <button id="lang-ja" class="active">日本語</button>
+        <button id="lang-en">English</button>
+        <span>|</span>
+        <button id="theme-light" class="active">Light</button>
+        <button id="theme-dark">Dark</button>
+      </div>
+    </header>
+
+    <article>
+      <header class="article-header">
+        <div class="article-number">№ 003</div>
+        <h1 class="article-title">
+          <span class="lang-ja">多言語に対応しました</span>
+          <span class="lang-en inline">Multi-Language Support</span>
+        </h1>
+        <time class="article-date">
+          <span class="lang-ja">2026年2月3日</span>
+          <span class="lang-en inline">February 3, 2026</span>
+        </time>
+      </header>
+
+      <div class="article-content lang-ja">
+        <p>CLIBLOGに多言語対応機能を追加した。100以上の言語に翻訳できる。言葉の壁を越えるということは、思いを伝える範囲を広げるということだ。</p>
+
+        <p>ひとつの記事が、さまざまな言語で読まれる。その可能性を、できるかぎり自然な形で実現したいと考えた。</p>
+
+        <figure>
+          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=450&fit=crop" alt="">
+          <figcaption>地球規模のネットワーク</figcaption>
+        </figure>
+
+        <h2>仕組みについて</h2>
+
+        <p>多言語対応の仕組みは、シンプルだ。記事を書いて投稿する際に、翻訳したい言語を伝えるだけ。あとはClaude Codeが翻訳を生成し、すぐに公開される。</p>
+
+        <ol>
+          <li>記事を書く</li>
+          <li>翻訳する言語を指定する</li>
+          <li>数秒で翻訳が完了する</li>
+        </ol>
+
+        <p>読者は、自分のブラウザの言語設定に応じて、自動的に適切な言語で記事を読むことができる。もちろん、手動で言語を切り替えることも可能だ。</p>
+
+        <div class="separator">• • •</div>
+
+        <h2>技術的な背景</h2>
+
+        <p>翻訳データは、元の記事と紐付けて管理される。データベースには以下のような情報が追加された。</p>
+
+        <pre><code>locale            -- 言語コード（ja, en, zh など）
+original_post_id  -- 翻訳元の記事ID
+translation_status -- 翻訳の状態</code></pre>
+
+        <h3>URLの設計</h3>
+
+        <p>多言語コンテンツへのアクセスは、シンプルなパラメータで制御する。</p>
+
+        <pre><code>/b/notf/my-article          → 自動選択
+/b/notf/my-article?lang=ja  → 日本語
+/b/notf/my-article?lang=en  → 英語</code></pre>
+
+        <h2>使い方</h2>
+
+        <p>Claude Codeに話しかけるように、翻訳を依頼できる。</p>
+
+        <blockquote>「この記事を英語と中国語に翻訳して」</blockquote>
+
+        <p>これだけで、三つの言語で同時に公開される。特別な操作は必要ない。</p>
+
+        <h2>これから</h2>
+
+        <p>次のバージョンでは、以下の機能を予定している。</p>
+
+        <ul>
+          <li>画像の多言語対応</li>
+          <li>翻訳の一貫性向上</li>
+          <li>コミュニティによるレビュー</li>
+        </ul>
+
+        <p>フィードバックは<a href="https://github.com/notef-neighbor/cliblog">GitHub</a>までお寄せください。</p>
+      </div>
+
+      <div class="article-content lang-en">
+        <p>Added multi-language support to CLIBLOG. You can now translate posts into over 100 languages. Crossing language barriers means expanding the reach of your thoughts.</p>
+
+        <p>One article, read in many languages. We wanted to make this possibility as natural as possible.</p>
+
+        <figure>
+          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=450&fit=crop" alt="">
+          <figcaption>Global network</figcaption>
+        </figure>
+
+        <h2>How it works</h2>
+
+        <p>The multi-language system is simple. When you write and publish an article, just specify the languages you want. Claude Code generates the translations, and they're published immediately.</p>
+
+        <ol>
+          <li>Write your article</li>
+          <li>Specify target languages</li>
+          <li>Translations complete in seconds</li>
+        </ol>
+
+        <p>Readers automatically see articles in their browser's language. They can also switch languages manually whenever they wish.</p>
+
+        <div class="separator">• • •</div>
+
+        <h2>Technical background</h2>
+
+        <p>Translation data is linked to the original article. The following information was added to the database:</p>
+
+        <pre><code>locale            -- Language code (ja, en, zh, etc.)
+original_post_id  -- Source article ID
+translation_status -- Translation state</code></pre>
+
+        <h3>URL design</h3>
+
+        <p>Access to multi-language content is controlled through simple parameters:</p>
+
+        <pre><code>/b/notf/my-article          → Auto-select
+/b/notf/my-article?lang=ja  → Japanese
+/b/notf/my-article?lang=en  → English</code></pre>
+
+        <h2>How to use</h2>
+
+        <p>Just ask Claude Code as you would in conversation:</p>
+
+        <blockquote>"Translate this to English and Chinese"</blockquote>
+
+        <p>That's all it takes to publish in three languages at once. No special steps required.</p>
+
+        <h2>What's next</h2>
+
+        <p>The next version will include:</p>
+
+        <ul>
+          <li>Image localization</li>
+          <li>Improved translation consistency</li>
+          <li>Community review</li>
+        </ul>
+
+        <p>Send your feedback to <a href="https://github.com/notef-neighbor/cliblog">GitHub</a>.</p>
+      </div>
+    </article>
+
+    <footer>
+      <p class="footer-text">
+        <span class="lang-ja">歩きながら、考える。</span>
+        <span class="lang-en inline">Walking and thinking.</span>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    document.getElementById('theme-light').onclick = () => {
+      html.dataset.theme = 'light';
+      document.getElementById('theme-light').classList.add('active');
+      document.getElementById('theme-dark').classList.remove('active');
+    };
+
+    document.getElementById('theme-dark').onclick = () => {
+      html.dataset.theme = 'dark';
+      document.getElementById('theme-dark').classList.add('active');
+      document.getElementById('theme-light').classList.remove('active');
+    };
+
+    document.getElementById('lang-ja').onclick = () => {
+      html.dataset.lang = 'ja';
+      document.getElementById('lang-ja').classList.add('active');
+      document.getElementById('lang-en').classList.remove('active');
+    };
+
+    document.getElementById('lang-en').onclick = () => {
+      html.dataset.lang = 'en';
+      document.getElementById('lang-en').classList.add('active');
+      document.getElementById('lang-ja').classList.remove('active');
+    };
+  </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CLIBLOG - Oliver Reichenstein Style</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #faf9f7;
+      --text: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --border: #e5e5e5;
+      --cursor: #1a73e8;
+    }
+
+    [data-theme="dark"] {
+      --bg: #1a1a1a;
+      --text: #e8e6e3;
+      --text-secondary: #8a8a8a;
+      --border: #333;
+      --cursor: #6ba4f8;
+    }
+
+    body {
+      font-family: 'iA Writer Duo', 'IBM Plex Mono', 'Menlo', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.7;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    header {
+      margin-bottom: 80px;
+    }
+
+    .site-name {
+      font-size: 14px;
+      font-weight: normal;
+      letter-spacing: 0.05em;
+      margin-bottom: 40px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .controls button {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      padding: 4px 0;
+      border-bottom: 1px solid transparent;
+    }
+
+    .controls button:hover {
+      color: var(--text);
+    }
+
+    .controls button.active {
+      color: var(--text);
+      border-bottom-color: var(--cursor);
+    }
+
+    .controls span {
+      color: var(--text-secondary);
+    }
+
+    h1 {
+      font-size: 14px;
+      font-weight: normal;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      letter-spacing: 0.05em;
+    }
+
+    .post-list {
+      list-style: none;
+    }
+
+    .post-item {
+      margin-bottom: 48px;
+    }
+
+    .post-item a {
+      text-decoration: none;
+      color: var(--text);
+      display: block;
+    }
+
+    .post-item a:hover .post-title {
+      color: var(--cursor);
+    }
+
+    .post-date {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .post-title {
+      font-size: 18px;
+      font-weight: normal;
+      line-height: 1.5;
+      transition: color 0.2s;
+    }
+
+    .post-excerpt {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      line-height: 1.6;
+    }
+
+    /* Focus mode - cursor blink */
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.2em;
+      background: var(--cursor);
+      margin-left: 2px;
+      animation: blink 1s infinite;
+      vertical-align: text-bottom;
+    }
+
+    footer {
+      margin-top: 120px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .lang-en { display: none; }
+    [data-lang="en"] .lang-ja { display: none; }
+    [data-lang="en"] .lang-en { display: block; }
+    [data-lang="en"] .lang-en.inline { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="site-name">CLIBLOG<span class="cursor"></span></div>
+      <div class="controls">
+        <button id="lang-ja" class="active">日本語</button>
+        <button id="lang-en">EN</button>
+        <span>/</span>
+        <button id="theme-light" class="active">Light</button>
+        <button id="theme-dark">Dark</button>
+      </div>
+    </header>
+
+    <main>
+      <h1>
+        <span class="lang-ja">記事一覧</span>
+        <span class="lang-en inline">Posts</span>
+      </h1>
+
+      <ul class="post-list">
+        <li class="post-item">
+          <a href="oliver-reichenstein-article.html">
+            <time class="post-date">2026-02-03</time>
+            <h2 class="post-title">
+              <span class="lang-ja">多言語に対応しました</span>
+              <span class="lang-en inline">Multi-Language Support</span>
+            </h2>
+            <p class="post-excerpt">
+              <span class="lang-ja">CLIBLOGに多言語対応機能を追加した。100以上の言語に翻訳できる。</span>
+              <span class="lang-en inline">Added multi-language support to CLIBLOG. Translate to over 100 languages.</span>
+            </p>
+          </a>
+        </li>
+
+        <li class="post-item">
+          <a href="#">
+            <time class="post-date">2026-01-28</time>
+            <h2 class="post-title">
+              <span class="lang-ja">APIキーの設計について</span>
+              <span class="lang-en inline">On API Key Design</span>
+            </h2>
+            <p class="post-excerpt">
+              <span class="lang-ja">セキュリティと使いやすさのバランス。HMACベースの高速検証を選んだ理由。</span>
+              <span class="lang-en inline">Balancing security and usability. Why we chose HMAC-based fast verification.</span>
+            </p>
+          </a>
+        </li>
+
+        <li class="post-item">
+          <a href="#">
+            <time class="post-date">2026-01-15</time>
+            <h2 class="post-title">
+              <span class="lang-ja">CLIBLOGを始めた理由</span>
+              <span class="lang-en inline">Why I Started CLIBLOG</span>
+            </h2>
+            <p class="post-excerpt">
+              <span class="lang-ja">AIネイティブなブログサービス。書くことと読むことを再定義する。</span>
+              <span class="lang-en inline">An AI-native blog service. Redefining writing and reading.</span>
+            </p>
+          </a>
+        </li>
+      </ul>
+    </main>
+
+    <footer>
+      <p>
+        <span class="lang-ja">集中して書く。静かに読む。</span>
+        <span class="lang-en inline">Focus. Write. Read in silence.</span>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    document.getElementById('theme-light').onclick = () => {
+      html.dataset.theme = 'light';
+      document.getElementById('theme-light').classList.add('active');
+      document.getElementById('theme-dark').classList.remove('active');
+    };
+
+    document.getElementById('theme-dark').onclick = () => {
+      html.dataset.theme = 'dark';
+      document.getElementById('theme-dark').classList.add('active');
+      document.getElementById('theme-light').classList.remove('active');
+    };
+
+    document.getElementById('lang-ja').onclick = () => {
+      html.dataset.lang = 'ja';
+      document.getElementById('lang-ja').classList.add('active');
+      document.getElementById('lang-en').classList.remove('active');
+    };
+
+    document.getElementById('lang-en').onclick = () => {
+      html.dataset.lang = 'en';
+      document.getElementById('lang-en').classList.add('active');
+      document.getElementById('lang-ja').classList.remove('active');
+    };
+  </script>
+</body>
+</html>

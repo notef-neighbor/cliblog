@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>多言語に対応しました - CLIBLOG</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #faf9f7;
+      --text: #1a1a1a;
+      --text-secondary: #6b6b6b;
+      --border: #e5e5e5;
+      --cursor: #1a73e8;
+    }
+
+    [data-theme="dark"] {
+      --bg: #1a1a1a;
+      --text: #e8e6e3;
+      --text-secondary: #8a8a8a;
+      --border: #333;
+      --cursor: #6ba4f8;
+    }
+
+    body {
+      font-family: 'iA Writer Duo', 'IBM Plex Mono', 'Menlo', monospace;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 18px;
+      line-height: 1.7;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 60px 24px;
+    }
+
+    header {
+      margin-bottom: 80px;
+    }
+
+    .back {
+      font-size: 14px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 40px;
+    }
+
+    .back:hover { color: var(--cursor); }
+
+    .controls {
+      display: flex;
+      gap: 24px;
+      font-size: 14px;
+    }
+
+    .controls button {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-family: inherit;
+      font-size: inherit;
+      padding: 4px 0;
+      border-bottom: 1px solid transparent;
+    }
+
+    .controls button:hover { color: var(--text); }
+    .controls button.active {
+      color: var(--text);
+      border-bottom-color: var(--cursor);
+    }
+    .controls span { color: var(--text-secondary); }
+
+    article { margin-bottom: 80px; }
+
+    .article-date {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+    }
+
+    .article-title {
+      font-size: 24px;
+      font-weight: normal;
+      line-height: 1.5;
+      margin-bottom: 48px;
+    }
+
+    .article-content p {
+      margin-bottom: 1.5em;
+    }
+
+    .article-content h2 {
+      font-size: 18px;
+      font-weight: normal;
+      margin: 2.5em 0 1em;
+      color: var(--text);
+    }
+
+    .article-content h3 {
+      font-size: 18px;
+      font-weight: normal;
+      margin: 2em 0 0.8em;
+      color: var(--text-secondary);
+    }
+
+    .article-content ul, .article-content ol {
+      margin: 0 0 1.5em 1.5em;
+    }
+
+    .article-content li {
+      margin-bottom: 0.5em;
+    }
+
+    .article-content pre {
+      background: var(--border);
+      padding: 1.5em;
+      margin: 1.5em 0;
+      overflow-x: auto;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .article-content code {
+      font-family: inherit;
+    }
+
+    .article-content blockquote {
+      padding-left: 1.5em;
+      border-left: 2px solid var(--cursor);
+      color: var(--text-secondary);
+      margin: 1.5em 0;
+      font-style: normal;
+    }
+
+    .article-content a {
+      color: var(--cursor);
+      text-decoration: none;
+    }
+
+    .article-content a:hover {
+      text-decoration: underline;
+    }
+
+    .article-content img {
+      max-width: 100%;
+      margin: 2em 0;
+    }
+
+    .article-content figure {
+      margin: 2em 0;
+    }
+
+    .article-content figcaption {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+    }
+
+    footer {
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .lang-en { display: none; }
+    [data-lang="en"] .lang-ja { display: none; }
+    [data-lang="en"] .lang-en { display: block; }
+    [data-lang="en"] .lang-en.inline { display: inline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="oliver-reichenstein-index.html" class="back">
+        <span class="lang-ja">← 一覧に戻る</span>
+        <span class="lang-en inline">← Back</span>
+      </a>
+      <div class="controls">
+        <button id="lang-ja" class="active">日本語</button>
+        <button id="lang-en">EN</button>
+        <span>/</span>
+        <button id="theme-light" class="active">Light</button>
+        <button id="theme-dark">Dark</button>
+      </div>
+    </header>
+
+    <article>
+      <time class="article-date">2026-02-03</time>
+      <h1 class="article-title">
+        <span class="lang-ja">多言語に対応しました</span>
+        <span class="lang-en inline">Multi-Language Support</span>
+      </h1>
+
+      <div class="article-content lang-ja">
+        <p>CLIBLOGに多言語対応機能を追加した。100以上の言語に翻訳できる。</p>
+
+        <p>言葉の壁を越える。ひとつの記事が、さまざまな言語で読まれる。</p>
+
+        <figure>
+          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop" alt="">
+          <figcaption>地球規模のネットワーク</figcaption>
+        </figure>
+
+        <h2>仕組み</h2>
+
+        <p>シンプル。記事を書いて、翻訳したい言語を指定する。それだけ。</p>
+
+        <ol>
+          <li>記事を書く</li>
+          <li>言語を指定</li>
+          <li>数秒で完了</li>
+        </ol>
+
+        <p>読者は自分のブラウザ設定で自動的に適切な言語で読める。</p>
+
+        <h2>技術</h2>
+
+        <pre><code>locale            -- 言語コード
+original_post_id  -- 翻訳元ID
+translation_status -- 状態</code></pre>
+
+        <p>URLはシンプルに：</p>
+
+        <pre><code>/b/notf/my-article          → 自動
+/b/notf/my-article?lang=ja  → 日本語
+/b/notf/my-article?lang=en  → 英語</code></pre>
+
+        <h2>使い方</h2>
+
+        <blockquote>「英語と中国語に翻訳して」</blockquote>
+
+        <p>これだけ。</p>
+
+        <h2>次</h2>
+
+        <ul>
+          <li>画像の多言語化</li>
+          <li>翻訳の一貫性</li>
+          <li>コミュニティレビュー</li>
+        </ul>
+
+        <p>フィードバック: <a href="https://github.com/notef-neighbor/cliblog">GitHub</a></p>
+      </div>
+
+      <div class="article-content lang-en">
+        <p>Added multi-language support to CLIBLOG. Translate to over 100 languages.</p>
+
+        <p>Cross the language barrier. One article, read in many languages.</p>
+
+        <figure>
+          <img src="https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=800&h=400&fit=crop" alt="">
+          <figcaption>Global network</figcaption>
+        </figure>
+
+        <h2>How it works</h2>
+
+        <p>Simple. Write your article, specify the languages. That's it.</p>
+
+        <ol>
+          <li>Write your article</li>
+          <li>Specify languages</li>
+          <li>Done in seconds</li>
+        </ol>
+
+        <p>Readers automatically see the article in their browser's language.</p>
+
+        <h2>Technical</h2>
+
+        <pre><code>locale            -- Language code
+original_post_id  -- Source ID
+translation_status -- State</code></pre>
+
+        <p>URLs are simple:</p>
+
+        <pre><code>/b/notf/my-article          → Auto
+/b/notf/my-article?lang=ja  → Japanese
+/b/notf/my-article?lang=en  → English</code></pre>
+
+        <h2>Usage</h2>
+
+        <blockquote>"Translate to English and Chinese"</blockquote>
+
+        <p>That's all.</p>
+
+        <h2>Next</h2>
+
+        <ul>
+          <li>Image localization</li>
+          <li>Translation consistency</li>
+          <li>Community review</li>
+        </ul>
+
+        <p>Feedback: <a href="https://github.com/notef-neighbor/cliblog">GitHub</a></p>
+      </div>
+    </article>
+
+    <footer>
+      <p>
+        <span class="lang-ja">集中して書く。静かに読む。</span>
+        <span class="lang-en inline">Focus. Write. Read in silence.</span>
+      </p>
+    </footer>
+  </div>
+
+  <script>
+    const html = document.documentElement;
+
+    document.getElementById('theme-light').onclick = () => {
+      html.dataset.theme = 'light';
+      document.getElementById('theme-light').classList.add('active');
+      document.getElementById('theme-dark').classList.remove('active');
+    };
+
+    document.getElementById('theme-dark').onclick = () => {
+      html.dataset.theme = 'dark';
+      document.getElementById('theme-dark').classList.add('active');
+      document.getElementById('theme-light').classList.remove('active');
+    };
+
+    document.getElementById('lang-ja').onclick = () => {
+      html.dataset.lang = 'ja';
+      document.getElementById('lang-ja').classList.add('active');
+      document.getElementById('lang-en').classList.remove('active');
+    };
+
+    document.getElementById('lang-en').onclick = () => {
+      html.dataset.lang = 'en';
+      document.getElementById('lang-en').classList.add('active');
+      document.getElementById('lang-ja').classList.remove('active');
+    };
+  </script>
+</body>
+</html>
