@@ -39,3 +39,10 @@ coverage/
 .wrangler/state/
 *.sqlite
 *.sqlite-journal
+
+# Development logs (private)
+.claude/logs/
+.claude/plans/
+
+# Production content (private)
+content/
