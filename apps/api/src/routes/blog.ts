@@ -2,6 +2,10 @@
  * Public blog routes (production)
  * Allows access via: /b/{subdomain}/{slug}
  * Shows only published posts, no preview notice
+ *
+ * IMPORTANT: Cloudflare edge cache ignores Vary: Accept-Language by default.
+ * We use Workers Cache API with custom cache keys that include the locale
+ * to ensure proper per-language caching.
  */
 import { Hono } from 'hono';
 import { eq, and, desc } from 'drizzle-orm';
@@ -11,8 +15,75 @@ import { createDb } from '../lib/db';
 import {
   renderMarkdown,
   SECURITY_HEADERS,
-  CACHE_HEADERS,
 } from '../lib/renderer';
+
+// Cache TTL in seconds
+const CACHE_TTL = 60;
+
+// Supported locales - must match DATE_LOCALE_MAP keys
+const SUPPORTED_LOCALES = ['ja', 'en', 'zh', 'ko', 'fr', 'de', 'es', 'pt', 'it', 'ru', 'ar', 'hi'];
+
+/**
+ * Normalize locale string to a supported locale.
+ * - Lowercases input
+ * - Removes region codes (en-US → en)
+ * - Returns null if not in SUPPORTED_LOCALES
+ *
+ * This function is used for BOTH cache key generation AND DB queries
+ * to ensure consistency.
+ */
+function normalizeLocale(locale: string | null | undefined): string | null {
+  if (!locale) return null;
+  // Lowercase and extract base language code (en-US → en)
+  const normalized = locale.toLowerCase().split('-')[0];
+  return SUPPORTED_LOCALES.includes(normalized) ? normalized : null;
+}
+
+/**
+ * Generate cache key with locale included.
+ * This ensures Cloudflare caches different language versions separately.
+ *
+ * When locale is null (no Accept-Language or unsupported), use 'auto' sentinel
+ * to keep it separate from explicit locale requests. This prevents cache
+ * collisions when the post's original language differs from the assumed default.
+ */
+function getCacheKey(url: string, locale: string | null): string {
+  const urlObj = new URL(url);
+  // Use 'auto' for unspecified locale to avoid collision with explicit 'ja'
+  urlObj.searchParams.set('_lang', locale || 'auto');
+  return urlObj.toString();
+}
+
+// Cloudflare Workers Cache API (caches.default is Workers-specific)
+declare const caches: CacheStorage & { default: Cache };
+
+/**
+ * Get cached response or null if not found.
+ */
+async function getCachedResponse(cacheKey: string): Promise<Response | null> {
+  try {
+    const cache = caches.default;
+    const cachedResponse = await cache.match(new Request(cacheKey));
+    return cachedResponse || null;
+  } catch {
+    // Cache API not available (e.g., in tests)
+    return null;
+  }
+}
+
+/**
+ * Store response in cache with custom key.
+ */
+async function cacheResponse(cacheKey: string, response: Response, ttl: number): Promise<void> {
+  try {
+    const cache = caches.default;
+    const clonedResponse = new Response(response.body, response);
+    clonedResponse.headers.set('Cache-Control', `public, s-maxage=${ttl}, stale-while-revalidate=30`);
+    await cache.put(new Request(cacheKey), clonedResponse);
+  } catch {
+    // Cache API not available (e.g., in tests)
+  }
+}
 
 // Locale mapping for date formatting
 const DATE_LOCALE_MAP: Record<string, string> = {
@@ -26,11 +97,44 @@ export const blogRoutes = new Hono<{ Bindings: Env }>();
 /**
  * GET /b/{subdomain}/{slug} - View a published blog post
  * Supports ?lang= parameter and Accept-Language header for i18n
+ *
+ * Caching strategy:
+ * - Uses Workers Cache API with locale in cache key
+ * - ?lang= parameter: cached per explicit locale
+ * - Accept-Language: cached per detected locale
  */
 blogRoutes.get('/:subdomain/:slug', async (c) => {
   const subdomain = c.req.param('subdomain');
   const slug = c.req.param('slug');
   const langParam = c.req.query('lang');
+
+  // Determine requested locale: ?lang= > Accept-Language > null
+  // All locales are normalized to ensure consistency between cache key and DB queries
+  let requestedLocale: string | null = null;
+
+  if (langParam) {
+    // Normalize ?lang= parameter (handles en-US, EN, etc.)
+    requestedLocale = normalizeLocale(langParam);
+  } else {
+    // Parse Accept-Language header (already returns normalized locale)
+    const acceptLanguage = c.req.header('Accept-Language');
+    if (acceptLanguage) {
+      requestedLocale = parseAcceptLanguage(acceptLanguage);
+    }
+  }
+
+  // Generate cache key with normalized locale
+  const cacheKey = getCacheKey(c.req.url, requestedLocale);
+
+  // Check cache first
+  const cachedResponse = await getCachedResponse(cacheKey);
+  if (cachedResponse) {
+    // Return cached response with Vary header for proper browser caching
+    const response = new Response(cachedResponse.body, cachedResponse);
+    response.headers.set('Vary', 'Accept-Language');
+    response.headers.set('X-Cache', 'HIT');
+    return response;
+  }
 
   const db = createDb(c.env.DB);
 
@@ -43,22 +147,6 @@ blogRoutes.get('/:subdomain/:slug', async (c) => {
 
   if (!user) {
     return c.text('Blog not found', 404);
-  }
-
-  // Determine requested locale: ?lang= > Accept-Language > null
-  let requestedLocale: string | null = null;
-
-  if (langParam) {
-    requestedLocale = langParam;
-  } else {
-    // Parse Accept-Language header
-    const acceptLanguage = c.req.header('Accept-Language');
-    if (acceptLanguage) {
-      const preferredLocale = parseAcceptLanguage(acceptLanguage);
-      if (preferredLocale) {
-        requestedLocale = preferredLocale;
-      }
-    }
   }
 
   // Step 1: If locale is specified, try to find post by (slug, locale)
@@ -269,20 +357,61 @@ blogRoutes.get('/:subdomain/:slug', async (c) => {
     baseUrl: `${reqUrl.protocol}//${reqUrl.host}`,
   });
 
-  // Set cache headers based on whether locale was explicitly requested
-  const headers = langParam
-    ? { ...SECURITY_HEADERS, ...CACHE_HEADERS }
-    : { ...SECURITY_HEADERS, ...CACHE_HEADERS, 'Vary': 'Accept-Language' };
+  // Build response with security headers
+  const headers: Record<string, string> = {
+    ...SECURITY_HEADERS,
+    'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=30`,
+    'Vary': 'Accept-Language',
+    'X-Cache': 'MISS',
+  };
 
-  return c.html(html, 200, headers);
+  const response = c.html(html, 200, headers);
+
+  // Cache the response (don't await to avoid blocking)
+  c.executionCtx.waitUntil(
+    cacheResponse(cacheKey, response.clone(), CACHE_TTL)
+  );
+
+  return response;
 });
 
 /**
  * GET /b/{subdomain} - Blog index page
+ *
+ * Caching strategy:
+ * - Uses Workers Cache API with locale in cache key
+ * - ?lang= parameter: cached per explicit locale
+ * - Accept-Language: cached per detected locale
  */
 blogRoutes.get('/:subdomain', async (c) => {
   const subdomain = c.req.param('subdomain');
   const langParam = c.req.query('lang');
+
+  // Determine requested locale: ?lang= > Accept-Language > null
+  // All locales are normalized to ensure consistency between cache key and DB queries
+  let requestedLocale: string | null = null;
+  if (langParam) {
+    // Normalize ?lang= parameter (handles en-US, EN, etc.)
+    requestedLocale = normalizeLocale(langParam);
+  } else {
+    // Parse Accept-Language header (already returns normalized locale)
+    const acceptLanguage = c.req.header('Accept-Language');
+    if (acceptLanguage) {
+      requestedLocale = parseAcceptLanguage(acceptLanguage);
+    }
+  }
+
+  // Generate cache key with normalized locale
+  const cacheKey = getCacheKey(c.req.url, requestedLocale);
+
+  // Check cache first
+  const cachedResponse = await getCachedResponse(cacheKey);
+  if (cachedResponse) {
+    const response = new Response(cachedResponse.body, cachedResponse);
+    response.headers.set('Vary', 'Accept-Language');
+    response.headers.set('X-Cache', 'HIT');
+    return response;
+  }
 
   const db = createDb(c.env.DB);
 
@@ -295,17 +424,6 @@ blogRoutes.get('/:subdomain', async (c) => {
 
   if (!user) {
     return c.text('Blog not found', 404);
-  }
-
-  // Determine requested locale: ?lang= > Accept-Language > null
-  let requestedLocale: string | null = null;
-  if (langParam) {
-    requestedLocale = langParam;
-  } else {
-    const acceptLanguage = c.req.header('Accept-Language');
-    if (acceptLanguage) {
-      requestedLocale = parseAcceptLanguage(acceptLanguage);
-    }
   }
 
   // Get all published posts (including translations)
@@ -380,12 +498,22 @@ blogRoutes.get('/:subdomain', async (c) => {
   // Generate index page
   const html = generateBlogIndexPage(subdomain, displayPosts, requestedLocale);
 
-  // Set Vary header if locale was auto-detected
-  const headers = langParam
-    ? { ...SECURITY_HEADERS, ...CACHE_HEADERS }
-    : { ...SECURITY_HEADERS, ...CACHE_HEADERS, 'Vary': 'Accept-Language' };
+  // Build response with security headers
+  const headers: Record<string, string> = {
+    ...SECURITY_HEADERS,
+    'Cache-Control': `public, s-maxage=${CACHE_TTL}, stale-while-revalidate=30`,
+    'Vary': 'Accept-Language',
+    'X-Cache': 'MISS',
+  };
 
-  return c.html(html, 200, headers);
+  const response = c.html(html, 200, headers);
+
+  // Cache the response (don't await to avoid blocking)
+  c.executionCtx.waitUntil(
+    cacheResponse(cacheKey, response.clone(), CACHE_TTL)
+  );
+
+  return response;
 });
 
 function renderBlogPage(options: {
@@ -499,11 +627,16 @@ function generateBlogIndexPage(
   postList: { slug: string; title: string; excerpt: string | null; publishedAt: string | null; locale?: string }[],
   requestedLocale?: string | null,
 ): string {
-  const pageLocale = requestedLocale || 'ja';
+  // Use first post's locale as fallback for page locale (for date formatting)
+  // Note: locale === null means legacy post, treated as 'ja' per schema convention
+  const fallbackLocale = postList[0]?.locale || 'ja';
+  const pageLocale = requestedLocale || fallbackLocale;
   const postsHtml = postList.map(p => {
     const date = p.publishedAt ? new Date(p.publishedAt).toLocaleDateString(DATE_LOCALE_MAP[pageLocale] || 'en-US') : '';
+    // locale === null = legacy (treated as 'ja') per DB schema
     const postLocale = p.locale || 'ja';
-    const langParam = postLocale !== 'ja' ? `?lang=${postLocale}` : '';
+    // Always include ?lang= to be explicit about locale
+    const langParam = `?lang=${postLocale}`;
     return `
       <li class="post-item">
         <a href="/b/${subdomain}/${p.slug}${langParam}">
@@ -572,15 +705,51 @@ function escapeHtml(str: string): string {
 }
 
 /**
- * Parse Accept-Language header and return best matching locale
- * Simple implementation: returns first language code
+ * Parse Accept-Language header and return best matching supported locale.
+ * - Parses q values (default 1.0)
+ * - Sorts by q value descending
+ * - Skips '*' wildcard
+ * - Returns first supported locale or null
+ *
+ * Example: "fr;q=0.9, en-US, *;q=0.5" → parsed as en (q=1.0), fr (q=0.9) → returns 'en'
  */
 function parseAcceptLanguage(header: string): string | null {
-  const locales = header.split(',').map(part => {
-    const [lang] = part.trim().split(';');
-    return lang.split('-')[0].toLowerCase(); // 'en-US' -> 'en'
-  });
-  return locales[0] || null;
+  const parsed: { locale: string; q: number }[] = [];
+
+  for (const part of header.split(',')) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    const [langPart, ...rest] = trimmed.split(';');
+    const lang = langPart.trim();
+
+    // Skip wildcard '*'
+    if (lang === '*') continue;
+
+    // Extract base language code (en-US → en) and lowercase
+    const baseLocale = lang.split('-')[0].toLowerCase();
+
+    // Parse q value (default 1.0)
+    let q = 1.0;
+    for (const param of rest) {
+      const match = param.trim().match(/^q\s*=\s*([\d.]+)$/i);
+      if (match) {
+        q = parseFloat(match[1]);
+        break;
+      }
+    }
+
+    // Skip if q=0 (explicitly rejected) or unsupported locale
+    if (q === 0) continue;
+    if (SUPPORTED_LOCALES.includes(baseLocale)) {
+      parsed.push({ locale: baseLocale, q });
+    }
+  }
+
+  // Sort by q value descending
+  parsed.sort((a, b) => b.q - a.q);
+
+  return parsed[0]?.locale || null;
 }
 
 /**

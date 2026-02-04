@@ -84,6 +84,19 @@ Phase 4: SEO
 
 ## 作業履歴
 
+### 2026-02-04: Accept-Language キャッシュ修正
+
+**詳細:** `.claude/logs/2026-02-04-accept-language-cache-fix.md`
+
+- **問題**: Cloudflare エッジキャッシュが `Vary: Accept-Language` を無視し、ブラウザ言語設定が反映されない
+- **解決**: Workers Cache API でロケールをキャッシュキーに含める実装
+- ロケール正規化関数 `normalizeLocale()` を追加（キャッシュキーとDBクエリで統一）
+- Accept-Language パーサー改善（q値ソート、`*` スキップ、`q=0` 除外）
+- `SUPPORTED_LOCALES` に `ar`, `hi` を追加
+- インデックスページで常に `?lang=` を明示的に付与
+- `locale === null` はスキーマ規約通り `'ja'` として統一
+- キャッシュキーに `_lang=auto` センチネル導入（未指定と `ja` を分離）
+
 ### 2026-02-03: v1.1 多言語対応 (i18n) 実装
 
 **詳細:** `.claude/logs/2026-02-03-i18n-implementation.md`
