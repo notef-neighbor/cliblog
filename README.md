@@ -137,9 +137,11 @@ Then redeploy: `pnpm deploy`
 
 Generate secrets with: `openssl rand -hex 32`
 
-## API Documentation
+## Documentation
 
-See [docs/api.md](docs/api.md) for the full API reference.
+- [API Reference](docs/api.md) - Full REST API documentation
+- [Skill Reference](docs/skill.md) - Claude Code skill documentation
+- [i18n Design](docs/i18n-design.md) - Multi-language system design
 
 ## Architecture
 
@@ -155,20 +157,13 @@ See [ARCHITECTURE.md](ARCHITECTURE.md) for design decisions and technical detail
 
 ## Changelog
 
-### v1.1 (2026-02-03)
-- **Multi-language support**: Translate posts into 100+ languages
-- **Translation API**: `POST /v1/posts/:id/translations`, `GET /v1/posts/:id/translations`
-- **Auto language detection**: `?lang=` parameter and Accept-Language header support
-- **SEO optimization**: Automatic canonical and hreflang tags
-- **Blog index localization**: Titles displayed in reader's language
-- **Email optional**: Registration no longer requires email
+See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
-### v1.0 (2026-02-02)
-- Initial release
-- Posts API (CRUD + publish)
-- Assets API (image upload)
-- Markdown rendering
-- Claude Code skill integration
+**Recent:**
+- **2026.2.5** - Skill i18n fix (same slug for all translations)
+- **2026.2.4** - Accept-Language cache fix
+- **2026.2.3** - Multi-language support
+- **2026.2.2** - Initial release
 
 ## License
 

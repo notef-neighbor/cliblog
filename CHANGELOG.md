@@ -5,6 +5,19 @@ All notable changes to CLIBLOG will be documented in this file.
 Versioning follows [CalVer](https://calver.org/) format: `YYYY.M.D` (e.g., 2026.2.4).
 Multiple releases on the same day use suffix: `YYYY.M.D-N` (e.g., 2026.2.4-1).
 
+## 2026.2.5
+
+### Fixes
+
+- **Skill translation behavior**: AI was creating separate posts with language suffixes (`-en`, `-zh`) instead of using the translation API. Updated skill to clearly document that all translations share the same slug.
+
+### Changes
+
+- Added i18n overview section to skill documentation.
+- Skill now shows correct URL format with `?lang=` parameter.
+- Added table format for displaying translation results.
+- Added `docs/skill.md` to the repository.
+
 ## 2026.2.4
 
 ### Fixes
